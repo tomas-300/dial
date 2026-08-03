@@ -196,6 +196,30 @@
   .adj-card .brewer-note{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);font-size:.87rem}
   .adj-card .brewer-note b{font-family:'IBM Plex Mono',monospace;font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
 
+  /* ── Tasting glossary ── */
+  .glossary{margin-top:40px;padding-top:8px;border-top:2px solid var(--ink)}
+  .gloss-intro{font-size:.88rem;color:var(--ink-soft);max-width:56ch;margin-bottom:16px}
+  .gloss-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .gloss{
+    background:var(--card);border:1.5px solid var(--line);border-radius:var(--radius);
+    padding:13px 15px 12px;display:flex;flex-direction:column;
+  }
+  .gloss.warn{border-left:3px solid var(--accent);transition:border-color .3s}
+  .gloss h4{
+    font-family:'Instrument Serif',serif;font-weight:400;font-size:1.18rem;
+    margin-bottom:5px;line-height:1.1;
+  }
+  .gloss p{font-size:.85rem;line-height:1.5;color:var(--ink);margin-bottom:9px;flex:1}
+  .lever{
+    font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.13em;text-transform:uppercase;
+    color:var(--ink-soft);padding-top:8px;border-top:1px dashed var(--line);
+  }
+  .gloss-tell{
+    margin-top:12px;padding:13px 15px;font-size:.86rem;line-height:1.55;
+    background:var(--card);border:1.5px solid var(--ink);border-radius:var(--radius);
+  }
+  .gloss-tell b{font-family:'IBM Plex Mono',monospace;font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);transition:color .3s}
+
   footer{margin-top:36px;padding-top:14px;border-top:1px solid var(--line);font-size:.8rem;color:var(--ink-soft)}
   footer p{margin-bottom:6px}
 
@@ -349,6 +373,7 @@
   .tp-btn:active{transform:scale(.97)}
 
   @media (max-width:560px){
+    .gloss-grid{grid-template-columns:1fr}
     .grid{grid-template-columns:1fr}
     .cell + .cell{border-left:none;border-top:1px solid var(--line)}
     .tick-num{font-size:9px}
@@ -405,7 +430,7 @@
   </div>
 
   <section id="adjust">
-    <div class="step-label">03 — The cup needs… <span style="text-transform:none;letter-spacing:0">(tap again to reset)</span></div>
+    <div class="step-label">03 — The cup needs…</div>
     <div class="adj-row" id="adj-btns">
       <button class="adj-btn" data-a="stronger">+ strength</button>
       <button class="adj-btn" data-a="weaker">− strength</button>
@@ -492,6 +517,63 @@
       <ul id="a-list"></ul>
       <div class="brewer-note" id="a-brewer" style="display:none"></div>
     </div>
+  </section>
+
+  <section class="glossary">
+    <div class="step-label">What am I tasting?</div>
+    <p class="gloss-intro">The eight things step 03 is actually moving. Learning to name the sensation is most of dialing in — once you can tell sour from bitter, the rest is one lever at a time.</p>
+    <div class="gloss-grid">
+
+      <div class="gloss">
+        <h4>Extraction</h4>
+        <p>How much you dissolved out of the grounds. Everything below is downstream of it — too little reads sour and thin, too much reads dry and harsh.</p>
+        <span class="lever">Lever · grind size</span>
+      </div>
+
+      <div class="gloss">
+        <h4>Strength</h4>
+        <p>Concentration only: how much coffee ended up in how much water. Independent of extraction — a strong cup can still taste sour, a weak one can still taste bitter. If the flavour is right but it's too much, this is what you change.</p>
+        <span class="lever">Lever · ratio</span>
+      </div>
+
+      <div class="gloss">
+        <h4>Acidity</h4>
+        <p>Brightness and life — citrus, green apple, red fruit. A tingle at the tip and sides of the tongue that makes the cup feel juicy. You want it; it's the first thing to die if you overshoot.</p>
+        <span class="lever">Lever · coarser, shorter, hotter</span>
+      </div>
+
+      <div class="gloss warn">
+        <h4>Sourness</h4>
+        <p>Acidity's failure mode, not more of it. Sharp, puckering, makes you salivate, and vanishes with no sweetness behind it. Almost always under-extraction — grind finer before touching anything else.</p>
+        <span class="lever">Lever · grind finer</span>
+      </div>
+
+      <div class="gloss">
+        <h4>Sweetness</h4>
+        <p>Caramel, honey, cane sugar. Sits in the middle of the cup and lingers after you swallow. Peak sweetness is the whole target — when it's highest, extraction is balanced.</p>
+        <span class="lever">Lever · the point of all this</span>
+      </div>
+
+      <div class="gloss warn">
+        <h4>Bitterness</h4>
+        <p>Cocoa and dark chocolate at low levels, which is fine. Ash, rubber and burnt at high levels, which isn't. Arrives late, at the back of the tongue, dries your mouth, and grows as the cup cools.</p>
+        <span class="lever">Lever · coarser, cooler</span>
+      </div>
+
+      <div class="gloss">
+        <h4>Body</h4>
+        <p>Weight and texture rather than flavour — skim milk versus whole milk. Carried by oils and fine particles, so metal and immersion give more of it and paper strips it out.</p>
+        <span class="lever">Lever · filter type, dose</span>
+      </div>
+
+      <div class="gloss">
+        <h4>Clarity</h4>
+        <p>How separable the flavours are. High: you can name two or three distinct things. Low: it's just "coffee" — muddy, blended, everything at once. Fines and oils blur it.</p>
+        <span class="lever">Lever · paper, coarser, less stirring</span>
+      </div>
+
+    </div>
+    <p class="gloss-tell"><b>Sour or bitter?</b> Sour hits immediately and makes you salivate. Bitter arrives after you swallow and dries you out. They're opposite problems — mistaking one for the other is the fastest way to make a cup worse.</p>
   </section>
 
   <footer>
@@ -763,15 +845,15 @@ const $ = id => document.getElementById(id);
 
 document.querySelectorAll("#brewers .chip").forEach(b=>{
   b.addEventListener("click", ()=>{
-    brewer = b.dataset.b;
-    document.querySelectorAll("#brewers .chip").forEach(x=>x.classList.toggle("on", x===b));
+    brewer = (brewer === b.dataset.b) ? null : b.dataset.b;
+    document.querySelectorAll("#brewers .chip").forEach(x=>x.classList.toggle("on", x.dataset.b===brewer));
     render();
   });
 });
 document.querySelectorAll(".roast-btn").forEach(b=>{
   b.addEventListener("click", ()=>{
-    roast = b.dataset.roast;
-    document.querySelectorAll(".roast-btn").forEach(x=>x.classList.toggle("on", x===b));
+    roast = (roast === b.dataset.roast) ? null : b.dataset.roast;
+    document.querySelectorAll(".roast-btn").forEach(x=>x.classList.toggle("on", x.dataset.roast===roast));
     render();
   });
 });
@@ -799,8 +881,15 @@ function render(){
   if(roast){
     document.documentElement.style.setProperty("--accent", ROASTS[roast].color);
     $("h-roast").textContent = roast;
+  } else {
+    document.documentElement.style.removeProperty("--accent");
+    $("h-roast").textContent = "next";
   }
-  if(!brewer || !roast) return;
+  if(!brewer || !roast){
+    $("recipe").style.display = "none";
+    $("adjust").style.display = "none";
+    return;
+  }
 
   const d = DATA[brewer], r = d.roasts[roast];
   const delta = activeDelta();

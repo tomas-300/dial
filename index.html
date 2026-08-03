@@ -55,6 +55,21 @@
   }
   .chip:hover{border-color:var(--ink)}
   .chip.on{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+
+  /* brewers suited to the chosen roast */
+  .chip.rec{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+  .chip .dot{
+    display:none;width:5px;height:5px;border-radius:50%;background:var(--accent);
+    margin-right:7px;vertical-align:1px;transition:background .3s;
+  }
+  .chip.rec .dot{display:inline-block}
+  .chip.rec.on{box-shadow:none;border-color:var(--ink)}
+  .chip.rec.on .dot{background:var(--paper)}
+  .rec-hint{
+    text-transform:none;letter-spacing:0;color:var(--accent);
+    margin-left:8px;opacity:0;transition:opacity .3s;
+  }
+  .rec-hint.show{opacity:1}
   .chip:focus-visible,.roast-btn:focus-visible,.adj-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
   .roast-strip{display:flex;gap:8px}
@@ -373,20 +388,20 @@
     <p class="sub">Pick the brewer and roast level for a starting recipe, then tell it what the cup is missing — the dashboard shifts to the corrected targets.</p>
   </header>
 
-  <div class="step-label">01 — Brewer</div>
-  <div class="chips" id="brewers" role="radiogroup" aria-label="Brewer">
-    <button class="chip" data-b="moka">Moka pot</button>
-    <button class="chip" data-b="press">French press</button>
-    <button class="chip" data-b="v60">V60</button>
-    <button class="chip" data-b="aero">Aeropress · paper</button>
-    <button class="chip" data-b="prismo">Aeropress · Prismo</button>
-  </div>
-
-  <div class="step-label">02 — Roast</div>
+  <div class="step-label">01 — Roast</div>
   <div class="roast-strip" role="radiogroup" aria-label="Roast level">
     <button class="roast-btn" data-roast="light"><span class="bean" aria-hidden="true"></span><span class="name">Light</span></button>
     <button class="roast-btn" data-roast="medium"><span class="bean" aria-hidden="true"></span><span class="name">Medium</span></button>
     <button class="roast-btn" data-roast="dark"><span class="bean" aria-hidden="true"></span><span class="name">Dark</span></button>
+  </div>
+
+  <div class="step-label">02 — Brewer<span class="rec-hint" id="rec-hint"></span></div>
+  <div class="chips" id="brewers" role="radiogroup" aria-label="Brewer">
+    <button class="chip" data-b="moka"><span class="dot" aria-hidden="true"></span>Moka pot</button>
+    <button class="chip" data-b="press"><span class="dot" aria-hidden="true"></span>French press</button>
+    <button class="chip" data-b="v60"><span class="dot" aria-hidden="true"></span>V60</button>
+    <button class="chip" data-b="aero"><span class="dot" aria-hidden="true"></span>Aeropress · paper</button>
+    <button class="chip" data-b="prismo"><span class="dot" aria-hidden="true"></span>Aeropress · Prismo</button>
   </div>
 
   <section id="adjust">
@@ -1403,7 +1418,27 @@ render = function(){
   paintGrind();
   syncTimer();
   solve();
+  paintRecommended();
 };
+
+/* Which brewers suit which roast.
+   Light  — paper devices; clarity and acidity are the point.
+   Medium — forgiving everywhere, but the three cleanest devices lead.
+   Dark   — body over clarity, and low-acid coffee takes pressure well. */
+const RECOMMEND = {
+  light:  ["v60","aero"],
+  medium: ["v60","aero","press"],
+  dark:   ["press","moka","prismo"]
+};
+function paintRecommended(){
+  const rec = roast ? RECOMMEND[roast] : null;
+  document.querySelectorAll("#brewers .chip").forEach(c =>
+    c.classList.toggle("rec", !!rec && rec.indexOf(c.dataset.b) > -1)
+  );
+  const hint = $("rec-hint");
+  hint.textContent = rec ? "· dotted = suits " + roast : "";
+  hint.classList.toggle("show", !!rec);
+}
 
 (function restore(){
   const b = Store.get("brewer", null), rst = Store.get("roast", null);

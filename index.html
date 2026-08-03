@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dial-In · Brew Reference</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Dial-In">
+<meta name="theme-color" content="#16403F">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F2EFE9;
+    --card:#FBF9F5;
+    --ink:#16403F;
+    --ink-soft:#5A6E6B;
+    --line:#D8D2C6;
+    --light:#C98A2D;
+    --medium:#8A4B2A;
+    --dark:#32241D;
+    --accent:var(--medium);
+    --radius:10px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Instrument Sans',system-ui,sans-serif;
+    font-size:16px;
+    line-height:1.5;
+    padding:28px 18px 60px;
+  }
+  .wrap{max-width:760px;margin:0 auto}
+
+  header{border-bottom:2px solid var(--ink);padding-bottom:18px;margin-bottom:26px}
+  .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-soft)}
+  h1{font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(2.2rem,6vw,3.1rem);line-height:1.05;margin-top:6px}
+  h1 em{font-style:italic;color:var(--accent);transition:color .3s}
+  .sub{margin-top:8px;color:var(--ink-soft);font-size:.92rem;max-width:48ch}
+
+  .step-label{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft);margin:26px 0 10px}
+
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{
+    font-family:'Instrument Sans',sans-serif;font-weight:500;font-size:.9rem;
+    padding:9px 14px;border:1.5px solid var(--line);border-radius:999px;
+    background:var(--card);color:var(--ink);cursor:pointer;transition:all .15s;
+  }
+  .chip:hover{border-color:var(--ink)}
+  .chip.on{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+  .chip:focus-visible,.roast-btn:focus-visible,.adj-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  .roast-strip{display:flex;gap:8px}
+  .roast-btn{
+    flex:1;border:1.5px solid var(--line);border-radius:var(--radius);
+    background:var(--card);cursor:pointer;padding:12px 8px 10px;text-align:center;transition:all .15s;
+  }
+  .roast-btn .bean{display:block;width:34px;height:22px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;margin:0 auto 8px;position:relative}
+  .roast-btn .bean::after{content:"";position:absolute;left:50%;top:12%;bottom:12%;width:2px;transform:translateX(-50%);background:var(--paper);border-radius:2px;opacity:.8}
+  .roast-btn[data-roast="light"] .bean{background:var(--light)}
+  .roast-btn[data-roast="medium"] .bean{background:var(--medium)}
+  .roast-btn[data-roast="dark"] .bean{background:var(--dark)}
+  .roast-btn span.name{font-weight:600;font-size:.9rem}
+  .roast-btn:hover{border-color:var(--ink)}
+  .roast-btn.on{border-color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--ink)}
+
+  /* Adjustment buttons — step 03, now modify the dashboard */
+  #adjust{display:none}
+  .adj-row{display:flex;flex-wrap:wrap;gap:8px}
+  .adj-btn{
+    font-family:'IBM Plex Mono',monospace;font-size:.82rem;font-weight:500;
+    padding:9px 13px;border:1.5px solid var(--line);border-radius:6px;
+    background:var(--card);color:var(--ink);cursor:pointer;transition:all .15s;
+  }
+  .adj-btn:hover{border-color:var(--ink)}
+  .adj-btn.on{background:var(--accent);border-color:var(--accent);color:var(--card)}
+
+  #recipe{margin-top:26px;display:none}
+  .card{
+    background:var(--card);border:1.5px solid var(--ink);border-radius:var(--radius);
+    overflow:hidden;
+  }
+  .card-head{
+    display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;
+    padding:14px 18px;border-bottom:1.5px solid var(--ink);
+  }
+  .card-head .title{font-family:'Instrument Serif',serif;font-size:1.5rem}
+  .head-tags{display:flex;gap:6px;align-items:baseline}
+  .tag{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--card);background:var(--accent);padding:4px 9px;border-radius:4px;transition:background .3s}
+  .tag.mod{background:var(--ink)}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--line)}
+  .cell{padding:16px 18px}
+  .cell + .cell{border-left:1px solid var(--line)}
+  .cell .k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft)}
+  .cell .v{font-family:'IBM Plex Mono',monospace;font-size:1.55rem;font-weight:600;margin-top:4px;line-height:1.1;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .cell .note{font-size:.82rem;color:var(--ink-soft);margin-top:4px}
+  .delta{
+    font-family:'IBM Plex Mono',monospace;font-size:.78rem;font-weight:600;
+    color:var(--card);background:var(--accent);padding:3px 7px;border-radius:4px;
+    letter-spacing:.02em;
+  }
+  .was{font-size:.85rem;font-weight:400;color:var(--ink-soft);text-decoration:line-through;text-decoration-thickness:1px}
+
+  .ruler-block{padding:18px 18px 20px;border-bottom:1px solid var(--line)}
+  .ruler-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .ruler-head .k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft)}
+  .ruler-head .clicks{font-family:'IBM Plex Mono',monospace;font-size:1.55rem;font-weight:600;display:flex;align-items:baseline;gap:8px}
+  .ruler{position:relative;height:46px;margin-top:12px}
+  .ruler .track{position:absolute;left:0;right:0;top:20px;height:2px;background:var(--line)}
+  .band-ghost{position:absolute;top:12px;height:18px;border:1.5px dashed var(--ink-soft);border-radius:3px;opacity:0;transition:all .35s ease}
+  .ruler .band{position:absolute;top:12px;height:18px;background:var(--accent);opacity:.25;border-radius:3px;transition:all .35s ease}
+  .ruler .band-line{position:absolute;top:20px;height:2px;background:var(--accent);transition:all .35s ease}
+  .tick{position:absolute;top:14px;width:1.5px;height:14px;background:var(--ink-soft);opacity:.55}
+  .tick.major{top:10px;height:22px;opacity:.9;background:var(--ink)}
+  .tick-num{position:absolute;top:36px;transform:translateX(-50%);font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink-soft)}
+  .ruler-note{font-size:.8rem;color:var(--ink-soft);margin-top:10px}
+
+  .method{padding:16px 18px}
+  .method .k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:8px}
+  .method ol{margin-left:18px;font-size:.92rem}
+  .method li{margin-bottom:5px}
+  .method li::marker{font-family:'IBM Plex Mono',monospace;font-size:.8rem;color:var(--accent)}
+
+  .adj-card{
+    margin-top:14px;background:var(--card);border:1.5px solid var(--line);
+    border-left:4px solid var(--accent);border-radius:var(--radius);
+    padding:16px 18px;display:none;transition:border-color .3s;
+  }
+  .adj-card h3{font-family:'Instrument Serif',serif;font-weight:400;font-size:1.25rem;margin-bottom:8px}
+  .adj-card ul{margin-left:18px;font-size:.92rem}
+  .adj-card li{margin-bottom:5px}
+  .adj-card .brewer-note{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);font-size:.87rem}
+  .adj-card .brewer-note b{font-family:'IBM Plex Mono',monospace;font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+
+  footer{margin-top:36px;padding-top:14px;border-top:1px solid var(--line);font-size:.8rem;color:var(--ink-soft)}
+  footer p{margin-bottom:6px}
+
+  @media (max-width:560px){
+    .grid{grid-template-columns:1fr}
+    .cell + .cell{border-left:none;border-top:1px solid var(--line)}
+    .tick-num{font-size:9px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none!important}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Timemore C2 · gram scale · clicks from zero</div>
+    <h1>Dial-in the <em id="h-roast">next</em> bag.</h1>
+    <p class="sub">Pick the brewer and roast level for a starting recipe, then tell it what the cup is missing — the dashboard shifts to the corrected targets.</p>
+  </header>
+
+  <div class="step-label">01 — Brewer</div>
+  <div class="chips" id="brewers" role="radiogroup" aria-label="Brewer">
+    <button class="chip" data-b="moka">Moka pot</button>
+    <button class="chip" data-b="press">French press</button>
+    <button class="chip" data-b="v60">V60</button>
+    <button class="chip" data-b="aero">Aeropress · paper</button>
+    <button class="chip" data-b="prismo">Aeropress · Prismo</button>
+  </div>
+
+  <div class="step-label">02 — Roast</div>
+  <div class="roast-strip" role="radiogroup" aria-label="Roast level">
+    <button class="roast-btn" data-roast="light"><span class="bean" aria-hidden="true"></span><span class="name">Light</span></button>
+    <button class="roast-btn" data-roast="medium"><span class="bean" aria-hidden="true"></span><span class="name">Medium</span></button>
+    <button class="roast-btn" data-roast="dark"><span class="bean" aria-hidden="true"></span><span class="name">Dark</span></button>
+  </div>
+
+  <section id="adjust">
+    <div class="step-label">03 — The cup needs… <span style="text-transform:none;letter-spacing:0">(tap again to reset)</span></div>
+    <div class="adj-row" id="adj-btns">
+      <button class="adj-btn" data-a="stronger">+ strength</button>
+      <button class="adj-btn" data-a="weaker">− strength</button>
+      <button class="adj-btn" data-a="sweeter">+ sweetness</button>
+      <button class="adj-btn" data-a="brighter">+ acidity</button>
+      <button class="adj-btn" data-a="sour">− acidity</button>
+      <button class="adj-btn" data-a="bitter">− bitterness</button>
+      <button class="adj-btn" data-a="body">+ body</button>
+      <button class="adj-btn" data-a="cleaner">+ clarity</button>
+    </div>
+  </section>
+
+  <section id="recipe">
+    <div class="card">
+      <div class="card-head">
+        <span class="title" id="r-title"></span>
+        <span class="head-tags">
+          <span class="tag" id="r-tag"></span>
+          <span class="tag mod" id="r-mod" style="display:none"></span>
+        </span>
+      </div>
+
+      <div class="ruler-block">
+        <div class="ruler-head">
+          <span class="k">Grind · C2 clicks</span>
+          <span class="clicks"><span class="was" id="r-clicks-was" style="display:none"></span><span id="r-clicks"></span></span>
+        </div>
+        <div class="ruler" id="ruler" aria-hidden="true">
+          <div class="track"></div>
+          <div class="band-ghost" id="band-ghost"></div>
+          <div class="band" id="band"></div>
+          <div class="band-line" id="band-line"></div>
+        </div>
+        <div class="ruler-note" id="r-grind-note"></div>
+      </div>
+
+      <div class="grid">
+        <div class="cell">
+          <div class="k">Water temp</div>
+          <div class="v"><span id="r-temp"></span><span class="delta" id="r-temp-delta" style="display:none"></span></div>
+          <div class="note" id="r-temp-note"></div>
+        </div>
+        <div class="cell">
+          <div class="k">Ratio · example</div>
+          <div class="v"><span class="was" id="r-ratio-was" style="display:none"></span><span id="r-ratio"></span></div>
+          <div class="note" id="r-dose"></div>
+        </div>
+        <div class="cell">
+          <div class="k">Brew time</div>
+          <div class="v"><span id="r-time"></span><span class="delta" id="r-time-delta" style="display:none"></span></div>
+          <div class="note" id="r-time-note"></div>
+        </div>
+        <div class="cell">
+          <div class="k">Roast logic</div>
+          <div class="note" id="r-logic" style="margin-top:6px;font-size:.88rem"></div>
+        </div>
+      </div>
+
+      <div class="method">
+        <div class="k">Method</div>
+        <ol id="r-method"></ol>
+      </div>
+    </div>
+
+    <div class="adj-card" id="adj-card">
+      <h3 id="a-title"></h3>
+      <ul id="a-list"></ul>
+      <div class="brewer-note" id="a-brewer" style="display:none"></div>
+    </div>
+  </section>
+
+  <footer>
+    <p><strong>Rule of the bench:</strong> the shifted values above are levers, not a checklist — change one per brew. Grind is the biggest lever; ratio controls strength; temp and time fine-tune extraction.</p>
+    <p>C2 clicks are counted from fully closed (zero point). Zero varies slightly between units — verify yours and shift all ranges accordingly. Fresh bags also drift: very fresh coffee (&lt; 7 days off roast) may need a touch coarser or longer bloom to degas.</p>
+  </footer>
+
+</div>
+
+<script>
+const ROASTS = {
+  light:  {label:"Light roast",  color:"#C98A2D"},
+  medium: {label:"Medium roast", color:"#8A4B2A"},
+  dark:   {label:"Dark roast",   color:"#32241D"}
+};
+
+// doseC/doseW: numeric dose for ratio recomputation (null = basket-set / fixed)
+const DATA = {
+  moka: {
+    name:"Moka pot",
+    grindNote:"Fine, but coarser than espresso. Never tamp.",
+    method:[
+      "Fill the base with pre-heated water to just under the valve.",
+      "Fill the basket level with grounds, shake flat, no tamping.",
+      "Assemble, lid open, low–medium flame.",
+      "When flow turns pale and starts to gurgle, kill the heat and cool the base under tap water to stop extraction."
+    ],
+    roasts:{
+      light:  {clicks:[10,13], temp:"~100°", tempNote:"Boiling water in the base — hot start pushes extraction on dense light beans.", ratio:"basket-set", dose:"3-cup: ~15–17 g · water to valve", doseC:null, doseW:null, time:"3–5 min", timeNote:"Cut at first gurgle", logic:"Finer end of range + full hot start. Light roasts under-extract easily in a moka."},
+      medium: {clicks:[11,14], temp:"~90°", tempNote:"Hot (not boiling) start in the base.", ratio:"basket-set", dose:"3-cup: ~15–17 g · water to valve", doseC:null, doseW:null, time:"3–5 min", timeNote:"Cut at first gurgle", logic:"Middle of everything. Adjust flame before adjusting grind."},
+      dark:   {clicks:[13,15], temp:"~70°", tempNote:"Warm start, lowest flame — dark roasts scorch fast in a moka.", ratio:"basket-set", dose:"3-cup: ~15–17 g · water to valve", doseC:null, doseW:null, time:"4–6 min", timeNote:"Cut early, before the gurgle", logic:"Coarser + cooler + gentler. Bitterness is the enemy here, not strength."}
+    }
+  },
+  press: {
+    name:"French press",
+    grindNote:"Medium-coarse. Finer than the old 'sea salt' advice — sludge is managed by not plunging deep.",
+    method:[
+      "Add coffee, pour all water, start timer.",
+      "At 4:00 stir the crust, skim the floating foam and grounds.",
+      "Let it settle 4–6 more minutes with the lid on.",
+      "Press only to the surface and pour gently — leave the sludge behind."
+    ],
+    roasts:{
+      light:  {clicks:[20,24], temp:"96–100°", tempNote:"Straight off the boil is fine for light roasts.", ratio:"1:15", dose:"30 g : 450 g", doseC:30, doseW:450, time:"4:00 + settle", timeNote:"Total ~8–10 min with settling", logic:"Hot water and the finer end — immersion is gentle, light roasts can take it."},
+      medium: {clicks:[22,26], temp:"92–96°", tempNote:"Off boil ~1 min.", ratio:"1:15", dose:"30 g : 450 g", doseC:30, doseW:450, time:"4:00 + settle", timeNote:"Total ~8–10 min with settling", logic:"The reference recipe. Move grind 2 clicks at a time."},
+      dark:   {clicks:[24,28], temp:"88–92°", tempNote:"Let the kettle rest ~2 min after boil.", ratio:"1:16", dose:"28 g : 450 g", doseC:28, doseW:450, time:"3:30–4:00 + settle", timeNote:"Shorter steep tames roastiness", logic:"Coarser, cooler, slightly leaner ratio — dark roasts extract fast and go ashy."}
+    }
+  },
+  v60: {
+    name:"V60",
+    grindNote:"Medium-fine. Target total drawdown, then tune by taste.",
+    method:[
+      "Rinse the paper filter well, discard rinse water.",
+      "Bloom: 2–3× coffee weight in water, swirl, wait per timer below.",
+      "Pour in slow circular stages to full weight, keeping the bed flat.",
+      "Final swirl; bed should look flat with no high-and-dry grounds."
+    ],
+    roasts:{
+      light:  {clicks:[18,21], temp:"95–100°", tempNote:"Boiling is legitimate for light roasts.", ratio:"1:16", dose:"15 g : 240 g", doseC:15, doseW:240, time:"2:45–3:30", timeNote:"Bloom 45 s with 45 g", logic:"Hot + finer end. If it stalls past 3:45, go coarser, not cooler."},
+      medium: {clicks:[19,23], temp:"90–94°", tempNote:"Off boil ~1 min.", ratio:"1:16", dose:"15 g : 240 g", doseC:15, doseW:240, time:"2:30–3:15", timeNote:"Bloom 30–45 s", logic:"Baseline pour-over. Grind moves flavor more than pour pattern."},
+      dark:   {clicks:[21,24], temp:"85–90°", tempNote:"Cooler water keeps roast flavors in check.", ratio:"1:17", dose:"14 g : 240 g", doseC:14, doseW:240, time:"2:15–3:00", timeNote:"Bloom 30 s", logic:"Coarser + cooler + leaner. Dark roasts are porous and give it all up fast."}
+    }
+  },
+  aero: {
+    name:"Aeropress · paper",
+    grindNote:"Medium-fine. Standard orientation, paper rinsed.",
+    method:[
+      "Add coffee, pour water to weight, stir 3 gentle turns.",
+      "Cap on, steep per timer below (piston resting to hold vacuum).",
+      "Swirl once, then press smoothly for ~30 s.",
+      "Stop at the hiss."
+    ],
+    roasts:{
+      light:  {clicks:[13,16], temp:"92–96°", tempNote:"Hot side — the short contact needs it.", ratio:"1:14", dose:"15 g : 210 g", doseC:15, doseW:210, time:"2:00 steep", timeNote:"+30 s press", logic:"Finer + hotter + full steep to open up dense light beans."},
+      medium: {clicks:[15,18], temp:"86–92°", tempNote:"Off boil ~1–2 min.", ratio:"1:15", dose:"15 g : 220 g", doseC:15, doseW:220, time:"1:30–2:00 steep", timeNote:"+30 s press", logic:"Forgiving middle ground — this is the recipe to riff from."},
+      dark:   {clicks:[17,20], temp:"80–86°", tempNote:"Notably cooler — dark + Aeropress heat = harsh fast.", ratio:"1:15", dose:"15 g : 230 g", doseC:15, doseW:230, time:"1:00–1:30 steep", timeNote:"+30 s press", logic:"Coarser, cooler, shorter. Everything pulled back one notch."}
+    }
+  },
+  prismo: {
+    name:"Aeropress · Prismo",
+    grindNote:"Fine — the no-bypass valve lets you grind near moka territory for a concentrate.",
+    method:[
+      "Standard orientation; the valve holds the liquid, no inversion needed.",
+      "Add coffee, pour water, stir well — small water volume needs full saturation.",
+      "Steep per timer below, cap resting on top.",
+      "Press firm and slow onto the cup. Drink as a concentrate or dilute 1:1–1:2 for an americano-style cup."
+    ],
+    roasts:{
+      light:  {clicks:[11,14], temp:"92–96°", tempNote:"Hot — concentrate brews need the energy.", ratio:"1:5", dose:"20 g : 100 g", doseC:20, doseW:100, time:"1:30 steep", timeNote:"Slow, firm press ~30 s", logic:"Fine + hot. Expect intensity, not espresso — dilute to find the sweet spot."},
+      medium: {clicks:[12,15], temp:"88–92°", tempNote:"Off boil ~1–2 min.", ratio:"1:5", dose:"20 g : 100 g", doseC:20, doseW:100, time:"1:15–1:30 steep", timeNote:"Slow, firm press ~30 s", logic:"The crema-ish shot recipe. Grind finer only if the press stays easy."},
+      dark:   {clicks:[14,17], temp:"82–88°", tempNote:"Cool it down — concentrated dark roast turns bitter instantly.", ratio:"1:5", dose:"18 g : 100 g", doseC:18, doseW:100, time:"1:00 steep", timeNote:"Slow, firm press ~30 s", logic:"Coarser, cooler, shorter, slightly lower dose. Dark concentrate is unforgiving."}
+    }
+  }
+};
+
+/*
+  Each adjustment: label + deltas applied to the dashboard.
+  clicks: shift (± clicks), dose: grams added to doseC, temp/time: chip strings.
+  over: per-brewer overrides of any delta field.
+*/
+const ADJUST = {
+  stronger:{
+    title:"More strength",
+    delta:{clicks:0, dose:2, temp:null, time:null},
+    over:{ moka:{clicks:-1, dose:0}, prismo:{dose:0} },
+    tips:[
+      "Raise the dose 1–2 g at the same water weight (drops the ratio one step).",
+      "Strength is concentration, not extraction — fix it with ratio, not temperature.",
+      "Only grind finer if the current cup also tastes thin or sour; otherwise leave grind alone."
+    ],
+    notes:{
+      moka:"Moka is basket-limited: strength comes from grinding 1 click finer, not more dose.",
+      prismo:"Already a concentrate — dilute less instead of changing the brew."
+    }
+  },
+  weaker:{
+    title:"Less strength",
+    delta:{clicks:0, dose:-2, temp:null, time:null},
+    over:{ moka:{dose:0}, prismo:{dose:0} },
+    tips:[
+      "Drop the dose 1–2 g at the same water weight (raises the ratio one step).",
+      "Too intense usually isn't over-extraction — don't reach for coarser or cooler yet.",
+      "If it's intense AND harsh, that's bitterness — use that button instead."
+    ],
+    notes:{
+      moka:"The basket must stay full — dilute the finished brew with hot water instead (a proper 'moka americano').",
+      prismo:"It's a concentrate by design — just dilute more in the cup, 1:2 or beyond."
+    }
+  },
+  sweeter:{
+    title:"More sweetness",
+    delta:{clicks:-1, dose:0, temp:"+2–3°", time:"+20–30 s"},
+    over:{},
+    tips:[
+      "Sweetness lives at the top of the extraction curve — push extraction up gently.",
+      "The shifted values are three levers for the same move: pick ONE per brew.",
+      "If it turns drying or harsh, you overshot into bitterness — back off half a step."
+    ],
+    notes:{
+      v60:"An extra pour stage (same total water, slower) often adds sweetness without touching grind.",
+      press:"Extend the steep to 5:00 before touching the grind."
+    }
+  },
+  brighter:{
+    title:"More acidity",
+    delta:{clicks:1, dose:0, temp:null, time:"−15–20 s"},
+    over:{},
+    tips:[
+      "Acids extract first — to keep them vivid, pull total extraction back slightly.",
+      "Coarser OR shorter contact — one lever per brew.",
+      "Keep water hot (especially light roasts): heat brings the fruit out, over-time buries it."
+    ],
+    notes:{
+      moka:"Cut the brew earlier — the last pale flow is what flattens acidity."
+    }
+  },
+  sour:{
+    title:"Less acidity (sour cup)",
+    delta:{clicks:-1, dose:0, temp:"+2–3°", time:"+15–20 s"},
+    over:{},
+    tips:[
+      "Sour = under-extracted. Push extraction up: the shifted values are three levers — pick ONE per brew.",
+      "Grind finer first; it's the strongest lever and the usual culprit.",
+      "Very fresh bags (< 7 days off roast) brew sour — a longer bloom or one more day of rest also fixes it."
+    ],
+    notes:{
+      moka:"Sour moka usually means the flame was too high — water rushed through before extracting. Go lower and slower.",
+      press:"Extend the steep to 5:00 before touching the grind."
+    }
+  },
+  bitter:{
+    title:"Less bitterness",
+    delta:{clicks:2, dose:0, temp:"−3–4°", time:"shorter"},
+    over:{},
+    tips:[
+      "Coarser is the first lever, biggest effect — start there.",
+      "Temp and time are the backups if two coarser steps aren't enough.",
+      "Also check for fines from a worn burr or over-fresh beans."
+    ],
+    notes:{
+      moka:"Lower the flame and kill the heat before the gurgle — most moka bitterness is thermal, not grind.",
+      press:"Skim the crust at 4:00 and never plunge to the bottom."
+    }
+  },
+  body:{
+    title:"More body",
+    delta:{clicks:-1, dose:1, temp:null, time:null},
+    over:{},
+    tips:[
+      "Raise the dose 1–2 g and grind slightly finer.",
+      "Metal path = oils and fines stay in the cup: press and Prismo naturally carry more body.",
+      "Paper filters strip oils — accept the trade or switch device for this bag."
+    ],
+    notes:{
+      aero:"Try a rinsed paper + shorter press, or move this coffee to the Prismo.",
+      v60:"Body is capped by the paper — chase texture with a finer grind and a slightly tighter ratio."
+    }
+  },
+  cleaner:{
+    title:"More clarity",
+    delta:{clicks:1, dose:0, temp:null, time:null},
+    over:{},
+    tips:[
+      "Slightly coarser — fewer fines, cleaner cup.",
+      "Paper beats metal for clarity: V60 and Aeropress-paper are the clarity devices.",
+      "Reduce agitation: gentler pours, fewer stirs."
+    ],
+    notes:{
+      press:"Longer settle (8–10 min total) and a shallow pour clean the press dramatically.",
+      prismo:"The metal disc caps clarity — add a paper filter on top of the Prismo disc, or brew this bag on paper."
+    }
+  }
+};
+
+const RULER_MAX = 30;
+let brewer = null, roast = null, adj = null;
+const $ = id => document.getElementById(id);
+
+(function(){
+  const r = $("ruler");
+  for(let i=0;i<=RULER_MAX;i++){
+    const t = document.createElement("div");
+    t.className = "tick" + (i%5===0 ? " major" : "");
+    t.style.left = (i/RULER_MAX*100) + "%";
+    r.appendChild(t);
+    if(i%5===0){
+      const n = document.createElement("div");
+      n.className = "tick-num";
+      n.style.left = (i/RULER_MAX*100) + "%";
+      n.textContent = i;
+      r.appendChild(n);
+    }
+  }
+})();
+
+document.querySelectorAll("#brewers .chip").forEach(b=>{
+  b.addEventListener("click", ()=>{
+    brewer = b.dataset.b;
+    document.querySelectorAll("#brewers .chip").forEach(x=>x.classList.toggle("on", x===b));
+    render();
+  });
+});
+document.querySelectorAll(".roast-btn").forEach(b=>{
+  b.addEventListener("click", ()=>{
+    roast = b.dataset.roast;
+    document.querySelectorAll(".roast-btn").forEach(x=>x.classList.toggle("on", x===b));
+    render();
+  });
+});
+document.querySelectorAll(".adj-btn").forEach(b=>{
+  b.addEventListener("click", ()=>{
+    adj = (adj === b.dataset.a) ? null : b.dataset.a;
+    document.querySelectorAll(".adj-btn").forEach(x=>x.classList.toggle("on", x.dataset.a===adj));
+    render();
+  });
+});
+
+function activeDelta(){
+  if(!adj) return null;
+  const a = ADJUST[adj];
+  const d = Object.assign({}, a.delta, (a.over && a.over[brewer]) || {});
+  return d;
+}
+
+function setBand(el, lo, hi){
+  el.style.left = (lo/RULER_MAX*100)+"%";
+  el.style.width = ((hi-lo)/RULER_MAX*100)+"%";
+}
+
+function render(){
+  if(roast){
+    document.documentElement.style.setProperty("--accent", ROASTS[roast].color);
+    $("h-roast").textContent = roast;
+  }
+  if(!brewer || !roast) return;
+
+  const d = DATA[brewer], r = d.roasts[roast];
+  const delta = activeDelta();
+  $("recipe").style.display = "block";
+  $("adjust").style.display = "block";
+
+  $("r-title").textContent = d.name;
+  $("r-tag").textContent = ROASTS[roast].label;
+  const modTag = $("r-mod");
+  if(adj){ modTag.style.display="inline-block"; modTag.textContent = ADJUST[adj].title; }
+  else modTag.style.display="none";
+
+  // ---- Grind / ruler ----
+  let lo = r.clicks[0], hi = r.clicks[1];
+  const ghost = $("band-ghost"), was = $("r-clicks-was");
+  if(delta && delta.clicks){
+    // ghost = original range, band = shifted
+    setBand(ghost, lo, hi);
+    ghost.style.opacity = "1";
+    was.style.display = "inline";
+    was.textContent = lo + "–" + hi;
+    lo = Math.max(0, Math.min(RULER_MAX, lo + delta.clicks));
+    hi = Math.max(0, Math.min(RULER_MAX, hi + delta.clicks));
+  } else {
+    ghost.style.opacity = "0";
+    was.style.display = "none";
+  }
+  $("r-clicks").textContent = lo + "–" + hi;
+  setBand($("band"), lo, hi);
+  setBand($("band-line"), lo, hi);
+  $("r-grind-note").textContent = d.grindNote;
+
+  // ---- Temp ----
+  $("r-temp").textContent = r.temp;
+  $("r-temp-note").textContent = r.tempNote;
+  const tD = $("r-temp-delta");
+  if(delta && delta.temp){ tD.style.display="inline-block"; tD.textContent = delta.temp; }
+  else tD.style.display="none";
+
+  // ---- Ratio / dose ----
+  const rWas = $("r-ratio-was");
+  if(delta && delta.dose && r.doseC != null){
+    const newC = r.doseC + delta.dose;
+    const newRatio = "1:" + Math.round(r.doseW / newC);
+    rWas.style.display = "inline";
+    rWas.textContent = r.ratio;
+    $("r-ratio").textContent = newRatio;
+    $("r-dose").textContent = newC + " g : " + r.doseW + " g";
+  } else {
+    rWas.style.display = "none";
+    $("r-ratio").textContent = r.ratio;
+    $("r-dose").textContent = r.dose;
+  }
+
+  // ---- Time ----
+  $("r-time").textContent = r.time;
+  $("r-time-note").textContent = r.timeNote;
+  const tiD = $("r-time-delta");
+  if(delta && delta.time){ tiD.style.display="inline-block"; tiD.textContent = delta.time; }
+  else tiD.style.display="none";
+
+  $("r-logic").textContent = r.logic;
+
+  const ol = $("r-method");
+  ol.innerHTML = "";
+  d.method.forEach(s=>{
+    const li = document.createElement("li");
+    li.textContent = s;
+    ol.appendChild(li);
+  });
+
+  // ---- Advice card ----
+  const card = $("adj-card");
+  if(!adj){ card.style.display="none"; return; }
+  const a = ADJUST[adj];
+  card.style.display = "block";
+  $("a-title").textContent = a.title;
+  const ul = $("a-list");
+  ul.innerHTML = "";
+  a.tips.forEach(t=>{
+    const li = document.createElement("li");
+    li.textContent = t;
+    ul.appendChild(li);
+  });
+  const bn = $("a-brewer");
+  if(a.notes && a.notes[brewer]){
+    bn.style.display = "block";
+    bn.innerHTML = "<b>" + DATA[brewer].name + "</b> — " + a.notes[brewer];
+  } else {
+    bn.style.display = "none";
+  }
+}
+</script>
+</body>
+</html>

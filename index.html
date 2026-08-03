@@ -109,6 +109,47 @@
   }
   .was{font-size:.85rem;font-weight:400;color:var(--ink-soft);text-decoration:line-through;text-decoration-thickness:1px}
 
+  /* ── Ratio solver ── */
+  .ratio-row{display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap}
+  .ratio-left{flex:1 1 110px;min-width:0}
+  .calc{flex:0 0 auto;display:flex;flex-direction:column;align-items:stretch;gap:2px;margin-top:2px}
+  .calc[hidden]{display:none}
+  .calc-field{display:block;cursor:text}
+  .calc-k{
+    display:block;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.17em;
+    text-transform:uppercase;color:var(--ink-soft);margin-bottom:2px;transition:color .2s;
+  }
+  .calc-in{
+    display:flex;align-items:baseline;gap:3px;
+    border:1.5px solid var(--line);border-radius:7px;background:var(--paper);
+    padding:5px 8px;transition:border-color .2s,background .2s;
+  }
+  .calc-in input{
+    width:4.2ch;border:none;background:none;padding:0;margin:0;color:var(--ink);
+    font-family:'IBM Plex Mono',monospace;font-size:1.02rem;font-weight:600;
+    text-align:right;font-variant-numeric:tabular-nums;-webkit-appearance:none;appearance:none;
+  }
+  .calc-in input:focus{outline:none}
+  .calc-in i{font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:.72rem;color:var(--ink-soft)}
+  .calc-field.active .calc-in{border-color:var(--ink);background:var(--card)}
+  .calc-field.active .calc-k{color:var(--ink)}
+  /* the field being solved for, rather than typed into */
+  .calc-field.derived .calc-in{border-style:dashed;border-color:var(--accent);background:transparent}
+  .calc-field.derived .calc-k{color:var(--accent)}
+  .calc-field.derived input{color:var(--accent)}
+
+  .calc-link{display:flex;align-items:center;gap:5px;padding:3px 0 1px}
+  .calc-rope{flex:1;height:1px;background:var(--line)}
+  .calc-ratio{
+    font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.06em;
+    color:var(--ink-soft);white-space:nowrap;transition:color .3s;
+  }
+  .calc-off{
+    flex:0 0 auto;font-family:'IBM Plex Mono',monospace;font-size:9.5px;line-height:1.5;
+    letter-spacing:.04em;color:var(--ink-soft);max-width:15ch;margin-top:4px;
+  }
+  .calc-off[hidden]{display:none}
+
   .ruler-block{padding:18px 18px 20px;border-bottom:1px solid var(--line)}
   .ruler-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
   .ruler-head .k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft)}
@@ -144,9 +185,6 @@
   footer p{margin-bottom:6px}
 
   /* ─────────────  Sticky grind slider  ───────────── */
-  .haptic-hack{position:fixed;top:0;left:0;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;z-index:-1}
-  /* genuinely rendered, just too small and too pale to notice */
-  .haptic-vis{position:fixed;bottom:0;left:0;width:2px;height:2px;overflow:hidden;opacity:.02;pointer-events:none;z-index:0}
 
   .grindbar{
     position:sticky;top:0;z-index:60;
@@ -279,18 +317,6 @@
     transition:left .2s cubic-bezier(.22,1,.36,1),transform .15s;
   }
   .tp-slider.dragging .tp-sthumb{transition:transform .15s;transform:scale(1.14)}
-
-  /* haptics diagnostics — remove once a working mode is confirmed */
-  .hap-test{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line)}
-  .hap-test p{font-size:.78rem;margin-bottom:8px}
-  .hap-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
-  .hap-btn{
-    font-family:'IBM Plex Mono',monospace;font-size:.8rem;font-weight:600;
-    width:38px;height:34px;border:1.5px solid var(--line);border-radius:6px;
-    background:var(--card);color:var(--ink);cursor:pointer;
-  }
-  .hap-btn.on{background:var(--ink);border-color:var(--ink);color:var(--paper)}
-  .hap-env{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.08em;color:var(--ink-soft);margin-top:8px}
   .tp-preset{
     font-family:'IBM Plex Mono',monospace;font-size:.72rem;font-weight:500;
     padding:6px 10px;border:1.5px solid var(--line);border-radius:6px;
@@ -318,11 +344,6 @@
 </style>
 </head>
 <body>
-
-<!-- iOS switch elements: toggling one makes Safari fire the system haptic engine.
-     Two copies — one invisible, one actually painted — because visibility may matter. -->
-<div class="haptic-hack" aria-hidden="true"><label id="haptic-label"><input type="checkbox" switch id="haptic-switch" tabindex="-1"></label></div>
-<div class="haptic-vis" aria-hidden="true"><label id="haptic-label-vis"><input type="checkbox" switch id="haptic-switch-vis" tabindex="-1"></label></div>
 
 <div class="grindbar" id="grindbar">
   <div class="gb-inner">
@@ -415,8 +436,24 @@
         </div>
         <div class="cell">
           <div class="k">Ratio · example</div>
-          <div class="v"><span class="was" id="r-ratio-was" style="display:none"></span><span id="r-ratio"></span></div>
-          <div class="note" id="r-dose"></div>
+          <div class="ratio-row">
+            <div class="ratio-left">
+              <div class="v"><span class="was" id="r-ratio-was" style="display:none"></span><span id="r-ratio"></span></div>
+              <div class="note" id="r-dose"></div>
+            </div>
+            <div class="calc" id="calc">
+              <label class="calc-field" for="calc-coffee">
+                <span class="calc-k">Coffee</span>
+                <span class="calc-in"><input id="calc-coffee" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" aria-label="Coffee in grams"><i>g</i></span>
+              </label>
+              <div class="calc-link"><span class="calc-rope"></span><span class="calc-ratio" id="calc-ratio">1:16</span><span class="calc-rope"></span></div>
+              <label class="calc-field" for="calc-water">
+                <span class="calc-k">Water</span>
+                <span class="calc-in"><input id="calc-water" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" aria-label="Water in grams"><i>g</i></span>
+              </label>
+            </div>
+            <div class="calc-off" id="calc-off" hidden>Basket-set — fill level, no ratio to solve.</div>
+          </div>
         </div>
         <div class="cell">
           <div class="k">Brew time</div>
@@ -445,18 +482,6 @@
   <footer>
     <p><strong>Rule of the bench:</strong> the shifted values above are levers, not a checklist — change one per brew. Grind is the biggest lever; ratio controls strength; temp and time fine-tune extraction.</p>
     <p>C2 clicks are counted from fully closed (zero point). Zero varies slightly between units — verify yours and shift all ranges accordingly. Fresh bags also drift: very fresh coffee (&lt; 7 days off roast) may need a touch coarser or longer bloom to degas.</p>
-
-    <div class="hap-test">
-      <p><strong>Haptics test.</strong> Tap each button. Whichever one you actually feel becomes the app's haptic mode and is remembered — tap it once more to lock it in. If none of them buzz, try the same test in Safari rather than the Home Screen app.</p>
-      <div class="hap-row" id="hap-row">
-        <button class="hap-btn" type="button" data-h="label">A</button>
-        <button class="hap-btn" type="button" data-h="input">B</button>
-        <button class="hap-btn" type="button" data-h="vis">C</button>
-        <button class="hap-btn" type="button" data-h="vibrate">D</button>
-        <button class="hap-btn" type="button" data-h="off" style="width:auto;padding:0 10px">off</button>
-      </div>
-      <div class="hap-env" id="hap-env"></div>
-    </div>
   </footer>
 
 </div>
@@ -866,94 +891,6 @@ const Store = {
 
 
 /* ══════════════════════════════════════════════════════════
-   HAPTICS
-   iOS Safari has no navigator.vibrate. It does, however, fire
-   the Taptic Engine when a <input type="checkbox" switch> is
-   toggled (iOS 17.4+). We keep one hidden off-screen and click
-   its label. Android/Chrome falls through to navigator.vibrate.
-   ══════════════════════════════════════════════════════════ */
-const Haptic = (function(){
-  const label    = document.getElementById("haptic-label"),
-        input    = document.getElementById("haptic-switch"),
-        labelVis = document.getElementById("haptic-label-vis");
-  let last = 0;
-
-  /* The synthetic click we fire must never escape into the page — a
-     document-level handler would mistake it for a real tap. Bubble phase
-     only: a capture-phase stop would cut the event off before it reaches
-     the label, which can suppress the toggle that produces the haptic. */
-  [label, labelVis].forEach(l => {
-    const host = l && l.parentNode;
-    if(host) host.addEventListener("click", e => e.stopPropagation());
-  });
-
-  const MODES = {
-    label:   () => { label && label.click(); },
-    input:   () => { input && input.click(); },
-    vis:     () => { labelVis && labelVis.click(); },
-    vibrate: () => { navigator.vibrate && navigator.vibrate(20); },
-    off:     () => {}
-  };
-  let mode = Store.get("haptic", "label");
-  if(!MODES[mode]) mode = "label";
-
-  function quiet(){
-    try{ return window.matchMedia("(prefers-reduced-motion: reduce)").matches; }
-    catch(e){ return false; }
-  }
-  function thump(){ try{ MODES[mode](); }catch(e){} }
-
-  function play(count, gap, pattern){
-    if(mode === "off" || quiet()) return;
-    thump();
-    for(let i=1;i<count;i++) setTimeout(thump, gap*i);
-    /* vibrate is a no-op on iOS but the only thing that works on Android */
-    if(mode !== "vibrate"){ try{ navigator.vibrate && navigator.vibrate(pattern); }catch(e){} }
-  }
-  return {
-    tick(){ const t = performance.now(); if(t - last < 26) return; last = t; play(1,0,10); },
-    tap(){ play(1,0,14); },
-    heavy(){ play(2,60,28); },
-    done(){ play(3,95,[35,70,35,70,70]); },
-    getMode(){ return mode; },
-    setMode(m){ if(MODES[m]){ mode = m; Store.set("haptic", m); } },
-    test(m){ const prev = mode; mode = m; thump(); mode = prev; }
-  };
-})();
-
-/* Diagnostics: tap a letter to fire that implementation and adopt it. */
-(function(){
-  const row = document.getElementById("hap-row"), env = document.getElementById("hap-env");
-  if(!row) return;
-  function paint(){
-    [...row.children].forEach(b => b.classList.toggle("on", b.dataset.h === Haptic.getMode()));
-  }
-  row.addEventListener("click", e => {
-    const b = e.target.closest(".hap-btn");
-    if(!b) return;
-    Haptic.setMode(b.dataset.h);
-    Haptic.test(b.dataset.h);
-    paint();
-  });
-  paint();
-  const standalone = !!(window.navigator.standalone ||
-    (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches));
-  env.textContent =
-    "standalone: " + (standalone ? "yes" : "no") +
-    " · switch elem: " + ("switch" in document.createElement("input") ? "yes" : "no") +
-    " · vibrate api: " + ("vibrate" in navigator ? "yes" : "no") +
-    " · using: " + Haptic.getMode();
-})();
-
-/* Every tappable control in the app gets feedback on press. */
-document.addEventListener("pointerdown", e => {
-  const el = e.target.closest("button, .chip, .roast-btn, .adj-btn, [data-haptic]");
-  if(!el || el.closest(".gb-scale")) return;
-  Haptic.tap();
-}, {passive:true});
-
-
-/* ══════════════════════════════════════════════════════════
    STICKY GRIND SLIDER
    ══════════════════════════════════════════════════════════ */
 const scale  = $("gb-scale"),
@@ -997,11 +934,10 @@ function currentRange(){
   return [lo, hi];
 }
 
-function setGrind(v, opts){
+function setGrind(v){
   const next = clampClicks(v);
   const changed = next !== grind;
   grind = next;
-  if(changed && opts && opts.haptic) Haptic.tick();
   if(changed) Store.set("grind", grind);
   paintGrind();
   return changed;
@@ -1054,7 +990,6 @@ gbOff.addEventListener("click", () => {
   const range = currentRange();
   if(!range) return;
   setGrind(Math.round((range[0] + range[1]) / 2));
-  Haptic.heavy();
 });
 
 /* drag / tap */
@@ -1070,13 +1005,12 @@ scale.addEventListener("pointerdown", e => {
   dragging = true;
   scale.classList.add("dragging");
   try{ scale.setPointerCapture(e.pointerId); }catch(err){}
-  Haptic.tap();
   setGrind(valueFromEvent(e));
   e.preventDefault();
 });
 scale.addEventListener("pointermove", e => {
   if(!dragging) return;
-  setGrind(valueFromEvent(e), {haptic:true});
+  setGrind(valueFromEvent(e));
 });
 ["pointerup","pointercancel"].forEach(evt =>
   scale.addEventListener(evt, e => {
@@ -1084,15 +1018,14 @@ scale.addEventListener("pointermove", e => {
     dragging = false;
     scale.classList.remove("dragging");
     try{ scale.releasePointerCapture(e.pointerId); }catch(err){}
-    Haptic.tap();
   })
 );
 scale.addEventListener("keydown", e => {
   const step = e.shiftKey ? 5 : 1;
-  if(e.key === "ArrowLeft" || e.key === "ArrowDown"){ setGrind(grind - step, {haptic:true}); e.preventDefault(); }
-  else if(e.key === "ArrowRight" || e.key === "ArrowUp"){ setGrind(grind + step, {haptic:true}); e.preventDefault(); }
-  else if(e.key === "Home"){ setGrind(0, {haptic:true}); e.preventDefault(); }
-  else if(e.key === "End"){ setGrind(RULER_MAX, {haptic:true}); e.preventDefault(); }
+  if(e.key === "ArrowLeft" || e.key === "ArrowDown"){ setGrind(grind - step); e.preventDefault(); }
+  else if(e.key === "ArrowRight" || e.key === "ArrowUp"){ setGrind(grind + step); e.preventDefault(); }
+  else if(e.key === "Home"){ setGrind(0); e.preventDefault(); }
+  else if(e.key === "End"){ setGrind(RULER_MAX); e.preventDefault(); }
 });
 
 /* shadow under the bar once the page scrolls */
@@ -1100,6 +1033,98 @@ const grindbar = $("grindbar");
 addEventListener("scroll", () => {
   grindbar.classList.toggle("stuck", window.scrollY > 6);
 }, {passive:true});
+
+
+/* ══════════════════════════════════════════════════════════
+   RATIO SOLVER
+   Type either side, the other one solves. Whichever field you
+   touched last stays put when the recipe changes — so if you
+   always brew 272 g of water, only the coffee dose moves.
+   ══════════════════════════════════════════════════════════ */
+const calcBox    = $("calc"),
+      inCoffee   = $("calc-coffee"),
+      inWater    = $("calc-water"),
+      calcRatio  = $("calc-ratio"),
+      calcOff    = $("calc-off"),
+      fldCoffee  = inCoffee.closest(".calc-field"),
+      fldWater   = inWater.closest(".calc-field");
+
+/* "water" = you fix the water, coffee is derived (and vice versa) */
+let anchor = Store.get("anchor", "water");
+let anchorVal = parseFloat(Store.get("anchorVal", "")) || null;
+
+/* the ratio actually on screen, adjustment shifts included */
+function liveRatio(){
+  const m = ($("r-ratio").textContent || "").match(/1\s*:\s*(\d+(?:\.\d+)?)/);
+  return m ? parseFloat(m[1]) : null;
+}
+function tidy(n, dp){
+  if(!isFinite(n)) return "";
+  const s = n.toFixed(dp);
+  return s.replace(/\.0+$/, "").replace(/(\.\d*?)0+$/, "$1");
+}
+
+function solve(){
+  const ratio = liveRatio();
+  if(!ratio){                       // moka: basket-set, nothing to solve
+    calcBox.hidden = true;
+    calcOff.hidden = false;
+    return;
+  }
+  calcBox.hidden = false;
+  calcOff.hidden = true;
+  calcRatio.textContent = "1:" + tidy(ratio, 2);
+
+  if(anchorVal == null){            // seed from the recipe's own example
+    const r = (brewer && roast) ? DATA[brewer].roasts[roast] : null;
+    if(r && r.doseW){ anchor = "water"; anchorVal = r.doseW; }
+    else { anchor = "water"; anchorVal = 250; }
+  }
+
+  if(anchor === "water"){
+    inWater.value  = tidy(anchorVal, 1);
+    inCoffee.value = tidy(anchorVal / ratio, 1);
+  } else {
+    inCoffee.value = tidy(anchorVal, 1);
+    inWater.value  = tidy(anchorVal * ratio, 0);
+  }
+  fldWater.classList.toggle("active",  anchor === "water");
+  fldWater.classList.toggle("derived", anchor !== "water");
+  fldCoffee.classList.toggle("active",  anchor === "coffee");
+  fldCoffee.classList.toggle("derived", anchor !== "coffee");
+}
+
+function onType(which){
+  return function(){
+    const raw = this.value.replace(",", ".").replace(/[^\d.]/g, "");
+    if(raw !== this.value) this.value = raw;
+    const v = parseFloat(raw);
+    anchor = which;
+    Store.set("anchor", anchor);
+    if(!isFinite(v) || v <= 0){     // mid-typing / cleared — don't fight the user
+      (which === "water" ? fldWater : fldCoffee).classList.add("active");
+      (which === "water" ? fldCoffee : fldWater).classList.add("derived");
+      return;
+    }
+    anchorVal = v;
+    Store.set("anchorVal", v);
+    const ratio = liveRatio();
+    if(!ratio) return;
+    if(which === "water") inCoffee.value = tidy(v / ratio, 1);
+    else                  inWater.value  = tidy(v * ratio, 0);
+    fldWater.classList.toggle("active",  which === "water");
+    fldWater.classList.toggle("derived", which !== "water");
+    fldCoffee.classList.toggle("active",  which === "coffee");
+    fldCoffee.classList.toggle("derived", which !== "coffee");
+  };
+}
+inWater.addEventListener("input", onType("water"));
+inCoffee.addEventListener("input", onType("coffee"));
+[inWater, inCoffee].forEach(el => {
+  el.addEventListener("focus", () => el.select());
+  el.addEventListener("blur", solve);          // re-tidy whatever they left behind
+  el.addEventListener("keydown", e => { if(e.key === "Enter") el.blur(); });
+});
 
 
 /* ══════════════════════════════════════════════════════════
@@ -1177,7 +1202,7 @@ function syncTimer(){
       T.userSet = true;
       T.target = c.s;
       T.label = c.l;
-      reset(false);
+      reset();
       syncTimer();
     });
     presets.appendChild(b);
@@ -1219,13 +1244,12 @@ function paintSlider(){
   slider.setAttribute("aria-valuenow", T.target);
   slider.setAttribute("aria-valuetext", fmt(T.target));
 }
-function setTarget(sec, haptic){
+function setTarget(sec){
   const snapped = Math.max(T_MIN, Math.min(T_MAX, Math.round(sec / T_STEP) * T_STEP));
   const changed = snapped !== T.target;
   T.target = snapped;
   T.userSet = true;
   T.label = "custom · " + fmt(snapped);
-  if(changed && haptic) Haptic.tick();
   if(changed) [...presets.children].forEach(c => c.classList.remove("on"));
   paintSlider();
   paintTimer();
@@ -1241,24 +1265,22 @@ slider.addEventListener("pointerdown", e => {
   sDragging = true;
   slider.classList.add("dragging");
   try{ slider.setPointerCapture(e.pointerId); }catch(err){}
-  Haptic.tap();
-  setTarget(secFromEvent(e), false);
+  setTarget(secFromEvent(e));
   e.preventDefault();
 });
-slider.addEventListener("pointermove", e => { if(sDragging) setTarget(secFromEvent(e), true); });
+slider.addEventListener("pointermove", e => { if(sDragging) setTarget(secFromEvent(e)); });
 ["pointerup","pointercancel"].forEach(evt =>
   slider.addEventListener(evt, e => {
     if(!sDragging) return;
     sDragging = false;
     slider.classList.remove("dragging");
     try{ slider.releasePointerCapture(e.pointerId); }catch(err){}
-    Haptic.tap();
   })
 );
 slider.addEventListener("keydown", e => {
   const step = e.shiftKey ? 60 : T_STEP;
-  if(e.key === "ArrowLeft" || e.key === "ArrowDown"){ setTarget(T.target - step, true); e.preventDefault(); }
-  else if(e.key === "ArrowRight" || e.key === "ArrowUp"){ setTarget(T.target + step, true); e.preventDefault(); }
+  if(e.key === "ArrowLeft" || e.key === "ArrowDown"){ setTarget(T.target - step); e.preventDefault(); }
+  else if(e.key === "ArrowRight" || e.key === "ArrowUp"){ setTarget(T.target + step); e.preventDefault(); }
 });
 
 function paintTimer(){
@@ -1284,20 +1306,18 @@ function paintTimer(){
   fab.classList.toggle("running", T.running);
 }
 
-/* milestone haptics */
+/* milestone bookkeeping */
 function milestones(){
   if(T.mode === "down"){
     const rem = Math.ceil(T.target - elapsed());
     if(T.lastWhole === null){ T.lastWhole = rem; return; }
     if(rem !== T.lastWhole){
-      if(rem === 3 || rem === 2 || rem === 1) Haptic.tick();
-      if(rem === 0) Haptic.done();
-      T.lastWhole = rem;
+      if(rem === 3 || rem === 2 || rem === 1)      if(rem === 0)      T.lastWhole = rem;
     }
   } else {
     const m = Math.floor(elapsed() / 60);
     if(T.lastWhole === null){ T.lastWhole = m; return; }
-    if(m !== T.lastWhole){ Haptic.heavy(); T.lastWhole = m; }
+    if(m !== T.lastWhole) T.lastWhole = m;
   }
 }
 
@@ -1318,13 +1338,12 @@ function pause(){
   keepAwake(false);
   paintTimer();
 }
-function reset(haptic){
+function reset(){
   T.acc = 0;
   T.running = false;
   T.lastWhole = null;
   clearInterval(loop);
   keepAwake(false);
-  if(haptic !== false) Haptic.heavy();
   paintTimer();
 }
 
@@ -1347,12 +1366,12 @@ document.addEventListener("visibilitychange", () => {
 });
 
 btnStart.addEventListener("click", () => T.running ? pause() : start());
-btnReset.addEventListener("click", () => reset(true));
+btnReset.addEventListener("click", () => reset());
 document.querySelectorAll(".tp-mode").forEach(b => {
   b.addEventListener("click", () => {
     T.mode = b.dataset.mode;
     document.querySelectorAll(".tp-mode").forEach(x => x.classList.toggle("on", x === b));
-    reset(false);
+    reset();
   });
 });
 
@@ -1383,6 +1402,7 @@ render = function(){
   if(roast)  Store.set("roast", roast);
   paintGrind();
   syncTimer();
+  solve();
 };
 
 (function restore(){

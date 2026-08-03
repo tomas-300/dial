@@ -731,37 +731,45 @@ function render(){
 }
 
 // ---- Stopwatch ----
-let swMs = 0, swRunning = false, swRAF = null, swLast = 0;
+// Uses wall-clock timestamps (Date.now), not requestAnimationFrame, so the
+// displayed time stays correct even if the tab is backgrounded or the phone
+// screen locks mid-brew (rAF pauses when hidden; Date.now() never does).
+let swAccum = 0, swStartTs = null, swRunning = false, swInterval = null;
 
 function swFormat(ms){
   const total = Math.floor(ms/1000);
   const m = Math.floor(total/60), s = total%60;
   return String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0");
 }
-function swTick(ts){
-  if(!swRunning) return;
-  if(swLast) swMs += ts - swLast;
-  swLast = ts;
-  $("sw-time").textContent = swFormat(swMs);
-  swRAF = requestAnimationFrame(swTick);
+function swElapsed(){
+  return swAccum + (swRunning && swStartTs ? Date.now() - swStartTs : 0);
+}
+function swRender(){
+  $("sw-time").textContent = swFormat(swElapsed());
 }
 $("sw-toggle").addEventListener("click", ()=>{
   swRunning = !swRunning;
   $("sw-toggle").textContent = swRunning ? "❚❚" : "▶";
   if(swRunning){
-    swLast = 0;
-    swRAF = requestAnimationFrame(swTick);
-  } else if(swRAF){
-    cancelAnimationFrame(swRAF);
+    swStartTs = Date.now();
+    swInterval = setInterval(swRender, 250);
+  } else {
+    swAccum = swElapsed();
+    swStartTs = null;
+    if(swInterval) clearInterval(swInterval);
+    swRender();
   }
 });
 $("sw-reset").addEventListener("click", ()=>{
   swRunning = false;
-  swMs = 0;
-  swLast = 0;
-  if(swRAF) cancelAnimationFrame(swRAF);
+  swAccum = 0;
+  swStartTs = null;
+  if(swInterval) clearInterval(swInterval);
   $("sw-toggle").textContent = "▶";
   $("sw-time").textContent = "00:00";
+});
+document.addEventListener("visibilitychange", ()=>{
+  if(!document.hidden) swRender();
 });
 </script>
 </body>

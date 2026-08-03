@@ -807,6 +807,15 @@ const Haptic = (function(){
   const label = document.getElementById("haptic-label");
   let last = 0, enabled = true;
 
+  /* The synthetic click we fire on the hidden switch must never escape into
+     the page — it would look like a real tap to any document-level handler. */
+  const host = label && label.parentNode;
+  if(host){
+    ["click","change","input","pointerdown","mousedown"].forEach(t =>
+      host.addEventListener(t, e => e.stopPropagation(), true)
+    );
+  }
+
   function quiet(){
     try{ return window.matchMedia("(prefers-reduced-motion: reduce)").matches; }
     catch(e){ return false; }
@@ -1195,10 +1204,14 @@ function openPanel(on){
 }
 fab.addEventListener("click", () => openPanel(true));
 $("tp-close").addEventListener("click", () => openPanel(false));
-document.addEventListener("click", e => {
-  if(!panel.classList.contains("open")) return;
-  if(panel.contains(e.target) || fab.contains(e.target)) return;
-  openPanel(false);
+
+/* Anything inside the panel or the fab swallows its own click, so the
+   document handler below only ever sees a genuine tap-outside. Checking
+   panel.contains(target) instead would break for controls that rebuild
+   the panel's DOM — the target is detached by the time it bubbles up. */
+[panel, fab].forEach(el => el.addEventListener("click", e => e.stopPropagation()));
+document.addEventListener("click", () => {
+  if(panel.classList.contains("open")) openPanel(false);
 });
 
 

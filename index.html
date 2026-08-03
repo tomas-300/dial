@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Dial-In · Brew Reference</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -34,9 +34,10 @@
     font-family:'Instrument Sans',system-ui,sans-serif;
     font-size:16px;
     line-height:1.5;
-    padding:28px 18px 60px;
+    padding:0 18px calc(env(safe-area-inset-bottom,0px) + 90px);
+    -webkit-tap-highlight-color:transparent;
   }
-  .wrap{max-width:760px;margin:0 auto}
+  .wrap{max-width:760px;margin:0 auto;padding-top:24px}
 
   header{border-bottom:2px solid var(--ink);padding-bottom:18px;margin-bottom:26px}
   .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-soft)}
@@ -122,34 +123,6 @@
   .tick-num{position:absolute;top:36px;transform:translateX(-50%);font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink-soft)}
   .ruler-note{font-size:.8rem;color:var(--ink-soft);margin-top:10px}
 
-  .user-mark{
-    position:absolute;top:20px;width:13px;height:13px;border-radius:50%;
-    background:var(--ink);border:2.5px solid var(--card);
-    box-shadow:0 0 0 1.5px var(--ink);
-    transform:translate(-50%,-50%);z-index:3;
-    transition:left .15s ease;display:none;pointer-events:none;
-  }
-
-  .grinder-row{margin-top:16px;padding-top:14px;border-top:1px dashed var(--line)}
-  .grinder-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
-  .grinder-head .k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft)}
-  .grinder-val{font-family:'IBM Plex Mono',monospace;font-size:1.3rem;font-weight:600}
-  .grinder-slider{
-    width:100%;margin-top:12px;-webkit-appearance:none;appearance:none;
-    height:4px;background:var(--line);border-radius:2px;outline:none;
-  }
-  .grinder-slider::-webkit-slider-thumb{
-    -webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:50%;
-    background:var(--ink);border:2.5px solid var(--card);box-shadow:0 0 0 1.5px var(--ink);cursor:pointer;
-  }
-  .grinder-slider::-moz-range-thumb{
-    width:20px;height:20px;border-radius:50%;background:var(--ink);
-    border:2.5px solid var(--card);box-shadow:0 0 0 1.5px var(--ink);cursor:pointer;
-  }
-  .grinder-feedback{font-size:.85rem;margin-top:9px;font-weight:500;color:var(--ink-soft)}
-  .grinder-feedback.in{color:var(--ink);font-weight:600}
-  .grinder-feedback.off{color:var(--accent);font-weight:600}
-
   .method{padding:16px 18px}
   .method .k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:8px}
   .method ol{margin-left:18px;font-size:.92rem}
@@ -170,25 +143,137 @@
   footer{margin-top:36px;padding-top:14px;border-top:1px solid var(--line);font-size:.8rem;color:var(--ink-soft)}
   footer p{margin-bottom:6px}
 
-  #stopwatch{
-    position:fixed;right:16px;bottom:16px;z-index:50;
-    background:var(--ink);color:var(--paper);border-radius:999px;
-    padding:8px 10px 8px 16px;display:flex;align-items:center;gap:8px;
-    box-shadow:0 4px 14px rgba(0,0,0,.28);font-family:'IBM Plex Mono',monospace;
+  /* ─────────────  Sticky grind slider  ───────────── */
+  .haptic-hack{position:fixed;top:0;left:0;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;z-index:-1}
+
+  .grindbar{
+    position:sticky;top:0;z-index:60;
+    margin:0 -18px;
+    padding:calc(env(safe-area-inset-top,0px) + 12px) 18px 8px;
+    background:rgba(242,239,233,.86);
+    -webkit-backdrop-filter:saturate(180%) blur(16px);
+    backdrop-filter:saturate(180%) blur(16px);
+    border-bottom:1px solid var(--line);
+    transition:box-shadow .28s ease,border-color .28s ease;
   }
-  #sw-time{font-size:1rem;font-weight:600;min-width:54px;text-align:center;letter-spacing:.02em}
-  .sw-btn{
-    width:34px;height:34px;border-radius:50%;border:1.5px solid var(--paper);
-    background:transparent;color:var(--paper);font-size:.95rem;cursor:pointer;
-    display:flex;align-items:center;justify-content:center;line-height:1;padding:0;
+  .grindbar.stuck{border-bottom-color:var(--ink);box-shadow:0 10px 24px -18px rgba(22,64,63,.7)}
+  .gb-inner{max-width:760px;margin:0 auto}
+  .gb-head{display:flex;justify-content:space-between;align-items:flex-end;gap:10px}
+  .gb-k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft);padding-bottom:2px}
+  .gb-val{display:flex;align-items:baseline;gap:9px}
+  #gb-num{font-family:'IBM Plex Mono',monospace;font-size:1.7rem;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
+  .gb-off{
+    font-family:'IBM Plex Mono',monospace;font-size:.68rem;font-weight:600;letter-spacing:.05em;
+    padding:4px 8px;border-radius:5px;border:none;cursor:pointer;white-space:nowrap;
+    background:var(--accent);color:var(--card);transition:background .3s,opacity .2s;
   }
-  .sw-btn:active{background:var(--paper);color:var(--ink)}
+  .gb-off.in{background:var(--ink)}
+  .gb-off:active{opacity:.7}
+  .gb-off[hidden]{display:none}
+
+  .gb-scale{
+    --pad:12px;
+    position:relative;height:46px;margin-top:6px;
+    touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+    cursor:grab;
+  }
+  .gb-scale:active{cursor:grabbing}
+  .gb-scale:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:8px}
+  .gb-track{position:absolute;left:var(--pad);right:var(--pad);top:21px;height:2px;background:var(--line);border-radius:2px}
+  .gb-target{
+    position:absolute;top:13px;height:18px;border-radius:4px;
+    background:var(--accent);opacity:.22;
+    box-shadow:inset 0 0 0 1px var(--accent);
+    transition:left .35s ease,width .35s ease,opacity .3s;
+  }
+  .gb-target[hidden]{display:none}
+  .gb-tick{position:absolute;top:16px;width:1.5px;height:12px;background:var(--ink-soft);opacity:.45;transform:translateX(-50%)}
+  .gb-tick.major{top:12px;height:20px;opacity:.85;background:var(--ink)}
+  .gb-num{position:absolute;top:36px;transform:translateX(-50%);font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--ink-soft)}
+  .gb-thumb{
+    position:absolute;top:5px;height:34px;width:15px;margin-left:-7.5px;
+    background:var(--ink);border:2px solid var(--card);border-radius:8px;
+    box-shadow:0 3px 10px -3px rgba(22,64,63,.55);
+    transition:left .28s cubic-bezier(.22,1,.36,1),transform .16s ease,background .3s;
+    z-index:2;
+  }
+  .gb-thumb::after{content:"";position:absolute;left:50%;top:7px;bottom:7px;width:1.5px;transform:translateX(-50%);background:var(--paper);opacity:.55;border-radius:2px}
+  .gb-thumb.on-target{background:var(--accent)}
+  .gb-scale.dragging .gb-thumb{transition:transform .16s ease,background .3s;transform:scale(1.14)}
+  .gb-foot{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-soft);margin-top:2px;min-height:13px}
+
+  /* "You are here" marker on the recipe ruler */
+  .you-marker{position:absolute;top:8px;height:26px;width:2px;background:var(--ink);border-radius:2px;transform:translateX(-50%);transition:left .28s cubic-bezier(.22,1,.36,1);z-index:3}
+  .you-marker::after{
+    content:"YOU";position:absolute;left:50%;top:-11px;transform:translateX(-50%);
+    font-family:'IBM Plex Mono',monospace;font-size:7.5px;letter-spacing:.12em;
+    color:var(--ink);background:var(--card);padding:0 3px;
+  }
+  .you-marker[hidden]{display:none}
+
+  /* ─────────────  Floating timer  ───────────── */
+  .timer-fab{
+    position:fixed;right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);z-index:80;
+    display:flex;align-items:center;gap:7px;
+    height:56px;padding:0 20px;border:none;border-radius:28px;
+    background:var(--ink);color:var(--paper);cursor:pointer;
+    box-shadow:0 10px 26px -8px rgba(22,64,63,.55);
+    font-family:'IBM Plex Mono',monospace;font-size:1rem;font-weight:600;font-variant-numeric:tabular-nums;
+    transition:transform .18s ease,background .3s,opacity .2s;
+  }
+  .timer-fab:active{transform:scale(.94)}
+  .timer-fab.running{background:var(--accent)}
+  .timer-fab.open{opacity:0;pointer-events:none;transform:scale(.8)}
+  .timer-fab svg{width:19px;height:19px;flex:none}
+
+  .timer-panel{
+    position:fixed;right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);z-index:81;
+    width:min(340px,calc(100vw - 32px));
+    background:var(--card);border:1.5px solid var(--ink);border-radius:16px;
+    box-shadow:0 24px 60px -20px rgba(22,64,63,.6);
+    padding:16px 16px 14px;
+    opacity:0;transform:translateY(14px) scale(.96);pointer-events:none;transform-origin:bottom right;
+    transition:opacity .22s ease,transform .22s cubic-bezier(.22,1,.36,1);
+  }
+  .timer-panel.open{opacity:1;transform:none;pointer-events:auto}
+  .tp-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .tp-head .k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft)}
+  .tp-close{border:none;background:none;color:var(--ink-soft);cursor:pointer;font-size:20px;line-height:1;padding:2px 4px}
+  .tp-modes{display:flex;gap:4px;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:3px}
+  .tp-mode{
+    flex:1;border:none;background:none;cursor:pointer;border-radius:6px;padding:7px 4px;
+    font-family:'IBM Plex Mono',monospace;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);
+    transition:all .18s;
+  }
+  .tp-mode.on{background:var(--ink);color:var(--paper)}
+  .tp-display{
+    font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;
+    font-size:3.1rem;font-weight:600;line-height:1;text-align:center;
+    margin:14px 0 4px;letter-spacing:-.02em;transition:color .3s;
+  }
+  .tp-display.over{color:var(--accent)}
+  .tp-phase{text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);min-height:14px;margin-bottom:12px}
+  .tp-presets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+  .tp-preset{
+    font-family:'IBM Plex Mono',monospace;font-size:.72rem;font-weight:500;
+    padding:6px 10px;border:1.5px solid var(--line);border-radius:6px;
+    background:var(--paper);color:var(--ink);cursor:pointer;transition:all .15s;
+  }
+  .tp-preset.on{background:var(--accent);border-color:var(--accent);color:var(--card)}
+  .tp-preset:active{transform:scale(.95)}
+  .tp-ctrl{display:flex;gap:8px}
+  .tp-btn{
+    flex:1;border:1.5px solid var(--ink);border-radius:10px;padding:12px;cursor:pointer;
+    font-family:'IBM Plex Mono',monospace;font-size:.82rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+    background:var(--ink);color:var(--paper);transition:all .15s;
+  }
+  .tp-btn.ghost{background:var(--paper);color:var(--ink);flex:0 0 34%}
+  .tp-btn:active{transform:scale(.97)}
 
   @media (max-width:560px){
     .grid{grid-template-columns:1fr}
     .cell + .cell{border-left:none;border-top:1px solid var(--line)}
     .tick-num{font-size:9px}
-    #stopwatch{right:12px;bottom:12px}
   }
   @media (prefers-reduced-motion:reduce){
     *{transition:none!important}
@@ -196,6 +281,30 @@
 </style>
 </head>
 <body>
+
+<!-- Hidden iOS switch: toggling it makes Safari fire the system haptic engine -->
+<div class="haptic-hack" aria-hidden="true"><label id="haptic-label"><input type="checkbox" switch id="haptic-switch" tabindex="-1"></label></div>
+
+<div class="grindbar" id="grindbar">
+  <div class="gb-inner">
+    <div class="gb-head">
+      <span class="gb-k">Grind · C2 clicks</span>
+      <span class="gb-val">
+        <button class="gb-off" id="gb-off" type="button" hidden></button>
+        <span id="gb-num">15</span>
+      </span>
+    </div>
+    <div class="gb-scale" id="gb-scale" role="slider" tabindex="0"
+         aria-label="Your current grind setting in clicks"
+         aria-valuemin="0" aria-valuemax="30" aria-valuenow="15">
+      <div class="gb-track"></div>
+      <div class="gb-target" id="gb-target" hidden></div>
+      <div class="gb-thumb" id="gb-thumb"></div>
+    </div>
+    <div class="gb-foot" id="gb-foot">Slide to log where your grinder is set</div>
+  </div>
+</div>
+
 <div class="wrap">
 
   <header>
@@ -254,18 +363,9 @@
           <div class="band-ghost" id="band-ghost"></div>
           <div class="band" id="band"></div>
           <div class="band-line" id="band-line"></div>
-          <div class="user-mark" id="user-mark"></div>
+          <div class="you-marker" id="you-marker" hidden></div>
         </div>
         <div class="ruler-note" id="r-grind-note"></div>
-
-        <div class="grinder-row">
-          <div class="grinder-head">
-            <span class="k">Your grinder is set to</span>
-            <span class="grinder-val" id="g-val">—</span>
-          </div>
-          <input type="range" class="grinder-slider" id="g-slider" min="0" max="30" step="1" value="15" aria-label="Your grinder's current click setting">
-          <div class="grinder-feedback" id="g-feedback">Drag to your grinder's actual click setting — it's remembered next time.</div>
-        </div>
       </div>
 
       <div class="grid">
@@ -310,10 +410,29 @@
 
 </div>
 
-<div id="stopwatch">
-  <span id="sw-time">00:00</span>
-  <button class="sw-btn" id="sw-toggle" aria-label="Start or pause timer">▶</button>
-  <button class="sw-btn" id="sw-reset" aria-label="Reset timer">↺</button>
+<button class="timer-fab" id="timer-fab" type="button" aria-label="Open brew timer">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+    <circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2.5 2M9 2h6"></path>
+  </svg>
+  <span id="fab-time">0:00</span>
+</button>
+
+<div class="timer-panel" id="timer-panel" role="dialog" aria-label="Brew timer">
+  <div class="tp-head">
+    <span class="k">Brew timer</span>
+    <button class="tp-close" id="tp-close" type="button" aria-label="Close timer">×</button>
+  </div>
+  <div class="tp-modes">
+    <button class="tp-mode on" id="mode-down" type="button" data-mode="down">Countdown</button>
+    <button class="tp-mode" id="mode-up" type="button" data-mode="up">Stopwatch</button>
+  </div>
+  <div class="tp-display" id="tp-display">0:00</div>
+  <div class="tp-phase" id="tp-phase"></div>
+  <div class="tp-presets" id="tp-presets"></div>
+  <div class="tp-ctrl">
+    <button class="tp-btn ghost" id="tp-reset" type="button">Reset</button>
+    <button class="tp-btn" id="tp-start" type="button">Start</button>
+  </div>
 </div>
 
 <script>
@@ -523,18 +642,7 @@ const ADJUST = {
 
 const RULER_MAX = 30;
 let brewer = null, roast = null, adj = null;
-let grinderVal = null;
-let lastLo = null, lastHi = null;
-const G_KEY = "dialin_grinder_setting";
 const $ = id => document.getElementById(id);
-
-(function(){
-  const stored = localStorage.getItem(G_KEY);
-  if(stored !== null && stored !== ""){
-    const n = Number(stored);
-    if(!Number.isNaN(n)) grinderVal = n;
-  }
-})();
 
 (function(){
   const r = $("ruler");
@@ -575,12 +683,6 @@ document.querySelectorAll(".adj-btn").forEach(b=>{
   });
 });
 
-$("g-slider").addEventListener("input", (e)=>{
-  grinderVal = Number(e.target.value);
-  localStorage.setItem(G_KEY, String(grinderVal));
-  updateGrinderUI(lastLo, lastHi);
-});
-
 function activeDelta(){
   if(!adj) return null;
   const a = ADJUST[adj];
@@ -591,41 +693,6 @@ function activeDelta(){
 function setBand(el, lo, hi){
   el.style.left = (lo/RULER_MAX*100)+"%";
   el.style.width = ((hi-lo)/RULER_MAX*100)+"%";
-}
-
-function updateGrinderUI(lo, hi){
-  const slider = $("g-slider");
-  const mark = $("user-mark");
-  const fb = $("g-feedback");
-
-  if(grinderVal === null){
-    if(lo != null && hi != null) slider.value = Math.round((lo+hi)/2);
-    $("g-val").textContent = "—";
-    mark.style.display = "none";
-    fb.textContent = "Drag to your grinder's actual click setting — it's remembered next time.";
-    fb.className = "grinder-feedback";
-    return;
-  }
-
-  slider.value = grinderVal;
-  $("g-val").textContent = grinderVal;
-  mark.style.display = "block";
-  mark.style.left = (grinderVal/RULER_MAX*100)+"%";
-
-  if(lo == null || hi == null) return;
-
-  if(grinderVal < lo){
-    const diff = lo - grinderVal;
-    fb.textContent = diff + (diff===1 ? " click" : " clicks") + " finer than target — coarsen up to reach the range.";
-    fb.className = "grinder-feedback off";
-  } else if(grinderVal > hi){
-    const diff = grinderVal - hi;
-    fb.textContent = diff + (diff===1 ? " click" : " clicks") + " coarser than target — grind finer to reach the range.";
-    fb.className = "grinder-feedback off";
-  } else {
-    fb.textContent = "Within target range.";
-    fb.className = "grinder-feedback in";
-  }
 }
 
 function render(){
@@ -665,9 +732,6 @@ function render(){
   setBand($("band"), lo, hi);
   setBand($("band-line"), lo, hi);
   $("r-grind-note").textContent = d.grindNote;
-
-  lastLo = lo; lastHi = hi;
-  updateGrinderUI(lo, hi);
 
   // ---- Temp ----
   $("r-temp").textContent = r.temp;
@@ -729,53 +793,439 @@ function render(){
     bn.style.display = "none";
   }
 }
+</script>
 
-// ---- Stopwatch ----
-// Uses wall-clock timestamps (Date.now), not requestAnimationFrame, so the
-// displayed time stays correct even if the tab is backgrounded or the phone
-// screen locks mid-brew (rAF pauses when hidden; Date.now() never does).
-let swAccum = 0, swStartTs = null, swRunning = false, swInterval = null;
+<script>
+/* ══════════════════════════════════════════════════════════
+   HAPTICS
+   iOS Safari has no navigator.vibrate. It does, however, fire
+   the Taptic Engine when a <input type="checkbox" switch> is
+   toggled (iOS 17.4+). We keep one hidden off-screen and click
+   its label. Android/Chrome falls through to navigator.vibrate.
+   ══════════════════════════════════════════════════════════ */
+const Haptic = (function(){
+  const label = document.getElementById("haptic-label");
+  let last = 0, enabled = true;
 
-function swFormat(ms){
-  const total = Math.floor(ms/1000);
-  const m = Math.floor(total/60), s = total%60;
-  return String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0");
+  function quiet(){
+    try{ return window.matchMedia("(prefers-reduced-motion: reduce)").matches; }
+    catch(e){ return false; }
+  }
+  function thump(){ try{ label && label.click(); }catch(e){} }
+  function vib(p){ try{ navigator.vibrate && navigator.vibrate(p); }catch(e){} }
+
+  function play(count, gap, pattern){
+    if(!enabled || quiet()) return;
+    thump();
+    for(let i=1;i<count;i++) setTimeout(thump, gap*i);
+    vib(pattern);
+  }
+  return {
+    /* rapid-fire, throttled — used while dragging the ruler */
+    tick(){ const t = performance.now(); if(t - last < 26) return; last = t; play(1,0,8); },
+    tap(){ play(1,0,14); },
+    heavy(){ play(2,60,28); },
+    done(){ play(3,95,[35,70,35,70,70]); },
+    set(v){ enabled = v; }
+  };
+})();
+
+/* Every tappable control in the app gets feedback on press. */
+document.addEventListener("pointerdown", e => {
+  const el = e.target.closest("button, .chip, .roast-btn, .adj-btn, [data-haptic]");
+  if(!el || el.closest(".gb-scale")) return;
+  Haptic.tap();
+}, {passive:true});
+
+
+/* ══════════════════════════════════════════════════════════
+   PERSISTENCE
+   ══════════════════════════════════════════════════════════ */
+const Store = {
+  get(k, fb){ try{ const v = localStorage.getItem("dialin."+k); return v===null ? fb : v; }catch(e){ return fb; } },
+  set(k, v){ try{ localStorage.setItem("dialin."+k, v); }catch(e){} }
+};
+
+
+/* ══════════════════════════════════════════════════════════
+   STICKY GRIND SLIDER
+   ══════════════════════════════════════════════════════════ */
+const scale  = $("gb-scale"),
+      thumb  = $("gb-thumb"),
+      target = $("gb-target"),
+      gbNum  = $("gb-num"),
+      gbOff  = $("gb-off"),
+      gbFoot = $("gb-foot"),
+      youMark= $("you-marker");
+
+const PAD = 12;                       // px inset so the thumb never clips
+let grind = clampClicks(parseInt(Store.get("grind", 15), 10) || 0);
+
+function clampClicks(v){ return Math.max(0, Math.min(RULER_MAX, Math.round(v))); }
+function posCSS(v){ return "calc(" + PAD + "px + (100% - " + (PAD*2) + "px) * " + (v/RULER_MAX) + ")"; }
+
+/* ticks + numbers */
+(function(){
+  for(let i=0;i<=RULER_MAX;i++){
+    const t = document.createElement("div");
+    t.className = "gb-tick" + (i%5===0 ? " major" : "");
+    t.style.left = posCSS(i);
+    scale.appendChild(t);
+    if(i%5===0){
+      const n = document.createElement("div");
+      n.className = "gb-num";
+      n.style.left = posCSS(i);
+      n.textContent = i;
+      scale.appendChild(n);
+    }
+  }
+})();
+
+/* current recommended range, after any active adjustment */
+function currentRange(){
+  if(!brewer || !roast) return null;
+  const r = DATA[brewer].roasts[roast];
+  let lo = r.clicks[0], hi = r.clicks[1];
+  const d = activeDelta();
+  if(d && d.clicks){ lo = clampClicks(lo + d.clicks); hi = clampClicks(hi + d.clicks); }
+  return [lo, hi];
 }
-function swElapsed(){
-  return swAccum + (swRunning && swStartTs ? Date.now() - swStartTs : 0);
+
+function setGrind(v, opts){
+  const next = clampClicks(v);
+  const changed = next !== grind;
+  grind = next;
+  if(changed && opts && opts.haptic) Haptic.tick();
+  if(changed) Store.set("grind", grind);
+  paintGrind();
+  return changed;
 }
-function swRender(){
-  $("sw-time").textContent = swFormat(swElapsed());
-}
-$("sw-toggle").addEventListener("click", ()=>{
-  if(swRunning){
-    // Pausing: fold the just-finished run into swAccum BEFORE flipping the
-    // flag, since swElapsed()'s running-branch depends on swRunning still
-    // being true (otherwise the elapsed run silently gets dropped).
-    swAccum = swAccum + (Date.now() - swStartTs);
-    swRunning = false;
-    swStartTs = null;
-    if(swInterval) clearInterval(swInterval);
-    $("sw-toggle").textContent = "▶";
-    swRender();
+
+function paintGrind(){
+  thumb.style.left = posCSS(grind);
+  gbNum.textContent = grind;
+  scale.setAttribute("aria-valuenow", grind);
+
+  const range = currentRange();
+  if(!range){
+    target.hidden = true;
+    gbOff.hidden = true;
+    thumb.classList.remove("on-target");
+    youMark.hidden = true;
+    gbFoot.textContent = "Slide to log where your grinder is set";
+    scale.setAttribute("aria-valuetext", grind + " clicks");
+    return;
+  }
+
+  const [lo, hi] = range;
+  target.hidden = false;
+  target.style.left = posCSS(lo);
+  target.style.width = "calc((100% - " + (PAD*2) + "px) * " + ((hi-lo)/RULER_MAX) + ")";
+
+  gbOff.hidden = false;
+  const inside = grind >= lo && grind <= hi;
+  thumb.classList.toggle("on-target", inside);
+  gbOff.classList.toggle("in", inside);
+
+  if(inside){
+    gbOff.textContent = "on target";
+    gbFoot.textContent = "Target " + lo + "–" + hi + " · you're in the window";
+  } else if(grind < lo){
+    gbOff.textContent = (lo - grind) + " too fine";
+    gbFoot.textContent = "Target " + lo + "–" + hi + " · tap to jump";
   } else {
-    swRunning = true;
-    swStartTs = Date.now();
-    swInterval = setInterval(swRender, 250);
-    $("sw-toggle").textContent = "❚❚";
+    gbOff.textContent = (grind - hi) + " too coarse";
+    gbFoot.textContent = "Target " + lo + "–" + hi + " · tap to jump";
+  }
+  scale.setAttribute("aria-valuetext", grind + " clicks, target " + lo + " to " + hi);
+
+  youMark.hidden = false;
+  youMark.style.left = (grind / RULER_MAX * 100) + "%";
+}
+
+/* jump to the middle of the recommended band */
+gbOff.addEventListener("click", () => {
+  const range = currentRange();
+  if(!range) return;
+  setGrind(Math.round((range[0] + range[1]) / 2));
+  Haptic.heavy();
+});
+
+/* drag / tap */
+function valueFromEvent(e){
+  const r = scale.getBoundingClientRect();
+  const usable = r.width - PAD*2;
+  const frac = usable > 0 ? (e.clientX - r.left - PAD) / usable : 0;
+  return frac * RULER_MAX;
+}
+let dragging = false;
+
+scale.addEventListener("pointerdown", e => {
+  dragging = true;
+  scale.classList.add("dragging");
+  try{ scale.setPointerCapture(e.pointerId); }catch(err){}
+  Haptic.tap();
+  setGrind(valueFromEvent(e));
+  e.preventDefault();
+});
+scale.addEventListener("pointermove", e => {
+  if(!dragging) return;
+  setGrind(valueFromEvent(e), {haptic:true});
+});
+["pointerup","pointercancel"].forEach(evt =>
+  scale.addEventListener(evt, e => {
+    if(!dragging) return;
+    dragging = false;
+    scale.classList.remove("dragging");
+    try{ scale.releasePointerCapture(e.pointerId); }catch(err){}
+    Haptic.tap();
+  })
+);
+scale.addEventListener("keydown", e => {
+  const step = e.shiftKey ? 5 : 1;
+  if(e.key === "ArrowLeft" || e.key === "ArrowDown"){ setGrind(grind - step, {haptic:true}); e.preventDefault(); }
+  else if(e.key === "ArrowRight" || e.key === "ArrowUp"){ setGrind(grind + step, {haptic:true}); e.preventDefault(); }
+  else if(e.key === "Home"){ setGrind(0, {haptic:true}); e.preventDefault(); }
+  else if(e.key === "End"){ setGrind(RULER_MAX, {haptic:true}); e.preventDefault(); }
+});
+
+/* shadow under the bar once the page scrolls */
+const grindbar = $("grindbar");
+addEventListener("scroll", () => {
+  grindbar.classList.toggle("stuck", window.scrollY > 6);
+}, {passive:true});
+
+
+/* ══════════════════════════════════════════════════════════
+   FLOATING TIMER
+   ══════════════════════════════════════════════════════════ */
+const fab      = $("timer-fab"),
+      fabTime  = $("fab-time"),
+      panel    = $("timer-panel"),
+      disp     = $("tp-display"),
+      phase    = $("tp-phase"),
+      presets  = $("tp-presets"),
+      btnStart = $("tp-start"),
+      btnReset = $("tp-reset");
+
+const T = {
+  mode: "down",
+  target: 240,
+  label: "",
+  running: false,
+  startedAt: 0,
+  acc: 0,
+  userSet: false,
+  lastWhole: null,
+  wakeLock: null
+};
+
+function fmt(sec){
+  const s = Math.max(0, Math.floor(sec));
+  return Math.floor(s/60) + ":" + String(s%60).padStart(2,"0");
+}
+function elapsed(){
+  return T.acc + (T.running ? (Date.now() - T.startedAt)/1000 : 0);
+}
+
+/* pull a usable countdown out of the recipe strings */
+function parseTimeSpec(timeStr, noteStr){
+  const out = {main:null, early:null, bloom:null};
+  const clock = [...String(timeStr).matchAll(/(\d+):(\d{2})/g)].map(m => +m[1]*60 + +m[2]);
+  if(clock.length){
+    out.early = clock[0];
+    out.main  = clock[clock.length - 1];
+  } else {
+    const rng = String(timeStr).match(/(\d+)\s*[–\-—]\s*(\d+)\s*min/);
+    if(rng){ out.early = +rng[1]*60; out.main = +rng[2]*60; }
+    else {
+      const one = String(timeStr).match(/(\d+)\s*min/);
+      if(one){ out.main = +one[1]*60; out.early = out.main; }
+    }
+  }
+  const b = String(noteStr||"").match(/bloom\s*(\d+)(?:\s*[–\-—]\s*(\d+))?\s*s/i);
+  if(b) out.bloom = +(b[2] || b[1]);
+  return out;
+}
+
+function syncTimer(){
+  presets.innerHTML = "";
+  if(!brewer || !roast){
+    if(!T.userSet && !T.running){ T.target = 240; T.label = ""; }
+    paintTimer();
+    return;
+  }
+  const r = DATA[brewer].roasts[roast];
+  const spec = parseTimeSpec(r.time, r.timeNote);
+  const chips = [];
+  if(spec.bloom) chips.push({s:spec.bloom, l:"Bloom " + fmt(spec.bloom)});
+  if(spec.early && spec.main && spec.early !== spec.main) chips.push({s:spec.early, l:"Early " + fmt(spec.early)});
+  if(spec.main) chips.push({s:spec.main, l:"Brew " + fmt(spec.main)});
+
+  chips.forEach(c => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "tp-preset" + (T.target === c.s ? " on" : "");
+    b.textContent = c.l;
+    b.addEventListener("click", () => {
+      T.userSet = true;
+      T.target = c.s;
+      T.label = c.l;
+      reset(false);
+      syncTimer();
+    });
+    presets.appendChild(b);
+  });
+  ["−30s","+30s"].forEach(lbl => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "tp-preset";
+    b.textContent = lbl;
+    b.addEventListener("click", () => {
+      T.userSet = true;
+      T.target = Math.max(5, T.target + (lbl[0] === "+" ? 30 : -30));
+      T.label = "custom";
+      paintTimer();
+    });
+    presets.appendChild(b);
+  });
+
+  if(!T.userSet && !T.running && spec.main){
+    T.target = spec.main;
+    T.label = "Brew " + fmt(spec.main);
+    [...presets.children].forEach(c => c.classList.toggle("on", c.textContent === T.label));
+  }
+  paintTimer();
+}
+
+function paintTimer(){
+  const e = elapsed();
+  if(T.mode === "down"){
+    const rem = T.target - e;
+    const over = rem < 0;
+    disp.textContent = (over ? "+" : "") + fmt(Math.abs(rem));
+    disp.classList.toggle("over", over);
+    phase.textContent = over ? "over by" : (T.label || "counting down");
+    fabTime.textContent = (over ? "+" : "") + fmt(Math.abs(rem));
+  } else {
+    disp.textContent = fmt(e);
+    disp.classList.remove("over");
+    phase.textContent = "stopwatch";
+    fabTime.textContent = fmt(e);
+  }
+  btnStart.textContent = T.running ? "Pause" : (e > 0 ? "Resume" : "Start");
+  fab.classList.toggle("running", T.running);
+}
+
+/* milestone haptics */
+function milestones(){
+  if(T.mode === "down"){
+    const rem = Math.ceil(T.target - elapsed());
+    if(T.lastWhole === null){ T.lastWhole = rem; return; }
+    if(rem !== T.lastWhole){
+      if(rem === 3 || rem === 2 || rem === 1) Haptic.tick();
+      if(rem === 0) Haptic.done();
+      T.lastWhole = rem;
+    }
+  } else {
+    const m = Math.floor(elapsed() / 60);
+    if(T.lastWhole === null){ T.lastWhole = m; return; }
+    if(m !== T.lastWhole){ Haptic.heavy(); T.lastWhole = m; }
+  }
+}
+
+let loop = null;
+function start(){
+  T.running = true;
+  T.startedAt = Date.now();
+  T.lastWhole = null;
+  clearInterval(loop);
+  loop = setInterval(() => { milestones(); paintTimer(); }, 100);
+  keepAwake(true);
+  paintTimer();
+}
+function pause(){
+  T.acc = elapsed();
+  T.running = false;
+  clearInterval(loop);
+  keepAwake(false);
+  paintTimer();
+}
+function reset(haptic){
+  T.acc = 0;
+  T.running = false;
+  T.lastWhole = null;
+  clearInterval(loop);
+  keepAwake(false);
+  if(haptic !== false) Haptic.heavy();
+  paintTimer();
+}
+
+async function keepAwake(on){
+  try{
+    if(on && "wakeLock" in navigator && !T.wakeLock){
+      T.wakeLock = await navigator.wakeLock.request("screen");
+      T.wakeLock.addEventListener("release", () => { T.wakeLock = null; });
+    } else if(!on && T.wakeLock){
+      await T.wakeLock.release();
+      T.wakeLock = null;
+    }
+  }catch(e){}
+}
+document.addEventListener("visibilitychange", () => {
+  if(document.visibilityState === "visible"){
+    if(T.running) keepAwake(true);
+    paintTimer();
   }
 });
-$("sw-reset").addEventListener("click", ()=>{
-  swRunning = false;
-  swAccum = 0;
-  swStartTs = null;
-  if(swInterval) clearInterval(swInterval);
-  $("sw-toggle").textContent = "▶";
-  $("sw-time").textContent = "00:00";
+
+btnStart.addEventListener("click", () => T.running ? pause() : start());
+btnReset.addEventListener("click", () => reset(true));
+document.querySelectorAll(".tp-mode").forEach(b => {
+  b.addEventListener("click", () => {
+    T.mode = b.dataset.mode;
+    document.querySelectorAll(".tp-mode").forEach(x => x.classList.toggle("on", x === b));
+    reset(false);
+  });
 });
-document.addEventListener("visibilitychange", ()=>{
-  if(!document.hidden) swRender();
+
+function openPanel(on){
+  panel.classList.toggle("open", on);
+  fab.classList.toggle("open", on);
+}
+fab.addEventListener("click", () => openPanel(true));
+$("tp-close").addEventListener("click", () => openPanel(false));
+document.addEventListener("click", e => {
+  if(!panel.classList.contains("open")) return;
+  if(panel.contains(e.target) || fab.contains(e.target)) return;
+  openPanel(false);
 });
+
+
+/* ══════════════════════════════════════════════════════════
+   WIRE INTO THE EXISTING RENDER + RESTORE LAST SESSION
+   ══════════════════════════════════════════════════════════ */
+const __render = render;
+render = function(){
+  __render.apply(this, arguments);
+  if(brewer) Store.set("brewer", brewer);
+  if(roast)  Store.set("roast", roast);
+  paintGrind();
+  syncTimer();
+};
+
+(function restore(){
+  const b = Store.get("brewer", null), rst = Store.get("roast", null);
+  if(b && DATA[b]){
+    brewer = b;
+    document.querySelectorAll("#brewers .chip").forEach(x => x.classList.toggle("on", x.dataset.b === b));
+  }
+  if(rst && ROASTS[rst]){
+    roast = rst;
+    document.querySelectorAll(".roast-btn").forEach(x => x.classList.toggle("on", x.dataset.roast === rst));
+  }
+  render();
+})();
 </script>
 </body>
 </html>

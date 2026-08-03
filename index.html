@@ -748,16 +748,21 @@ function swRender(){
   $("sw-time").textContent = swFormat(swElapsed());
 }
 $("sw-toggle").addEventListener("click", ()=>{
-  swRunning = !swRunning;
-  $("sw-toggle").textContent = swRunning ? "❚❚" : "▶";
   if(swRunning){
-    swStartTs = Date.now();
-    swInterval = setInterval(swRender, 250);
-  } else {
-    swAccum = swElapsed();
+    // Pausing: fold the just-finished run into swAccum BEFORE flipping the
+    // flag, since swElapsed()'s running-branch depends on swRunning still
+    // being true (otherwise the elapsed run silently gets dropped).
+    swAccum = swAccum + (Date.now() - swStartTs);
+    swRunning = false;
     swStartTs = null;
     if(swInterval) clearInterval(swInterval);
+    $("sw-toggle").textContent = "▶";
     swRender();
+  } else {
+    swRunning = true;
+    swStartTs = Date.now();
+    swInterval = setInterval(swRender, 250);
+    $("sw-toggle").textContent = "❚❚";
   }
 });
 $("sw-reset").addEventListener("click", ()=>{

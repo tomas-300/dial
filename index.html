@@ -122,6 +122,34 @@
   .tick-num{position:absolute;top:36px;transform:translateX(-50%);font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink-soft)}
   .ruler-note{font-size:.8rem;color:var(--ink-soft);margin-top:10px}
 
+  .user-mark{
+    position:absolute;top:20px;width:13px;height:13px;border-radius:50%;
+    background:var(--ink);border:2.5px solid var(--card);
+    box-shadow:0 0 0 1.5px var(--ink);
+    transform:translate(-50%,-50%);z-index:3;
+    transition:left .15s ease;display:none;pointer-events:none;
+  }
+
+  .grinder-row{margin-top:16px;padding-top:14px;border-top:1px dashed var(--line)}
+  .grinder-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .grinder-head .k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft)}
+  .grinder-val{font-family:'IBM Plex Mono',monospace;font-size:1.3rem;font-weight:600}
+  .grinder-slider{
+    width:100%;margin-top:12px;-webkit-appearance:none;appearance:none;
+    height:4px;background:var(--line);border-radius:2px;outline:none;
+  }
+  .grinder-slider::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:50%;
+    background:var(--ink);border:2.5px solid var(--card);box-shadow:0 0 0 1.5px var(--ink);cursor:pointer;
+  }
+  .grinder-slider::-moz-range-thumb{
+    width:20px;height:20px;border-radius:50%;background:var(--ink);
+    border:2.5px solid var(--card);box-shadow:0 0 0 1.5px var(--ink);cursor:pointer;
+  }
+  .grinder-feedback{font-size:.85rem;margin-top:9px;font-weight:500;color:var(--ink-soft)}
+  .grinder-feedback.in{color:var(--ink);font-weight:600}
+  .grinder-feedback.off{color:var(--accent);font-weight:600}
+
   .method{padding:16px 18px}
   .method .k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:8px}
   .method ol{margin-left:18px;font-size:.92rem}
@@ -142,10 +170,25 @@
   footer{margin-top:36px;padding-top:14px;border-top:1px solid var(--line);font-size:.8rem;color:var(--ink-soft)}
   footer p{margin-bottom:6px}
 
+  #stopwatch{
+    position:fixed;right:16px;bottom:16px;z-index:50;
+    background:var(--ink);color:var(--paper);border-radius:999px;
+    padding:8px 10px 8px 16px;display:flex;align-items:center;gap:8px;
+    box-shadow:0 4px 14px rgba(0,0,0,.28);font-family:'IBM Plex Mono',monospace;
+  }
+  #sw-time{font-size:1rem;font-weight:600;min-width:54px;text-align:center;letter-spacing:.02em}
+  .sw-btn{
+    width:34px;height:34px;border-radius:50%;border:1.5px solid var(--paper);
+    background:transparent;color:var(--paper);font-size:.95rem;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;line-height:1;padding:0;
+  }
+  .sw-btn:active{background:var(--paper);color:var(--ink)}
+
   @media (max-width:560px){
     .grid{grid-template-columns:1fr}
     .cell + .cell{border-left:none;border-top:1px solid var(--line)}
     .tick-num{font-size:9px}
+    #stopwatch{right:12px;bottom:12px}
   }
   @media (prefers-reduced-motion:reduce){
     *{transition:none!important}
@@ -211,8 +254,18 @@
           <div class="band-ghost" id="band-ghost"></div>
           <div class="band" id="band"></div>
           <div class="band-line" id="band-line"></div>
+          <div class="user-mark" id="user-mark"></div>
         </div>
         <div class="ruler-note" id="r-grind-note"></div>
+
+        <div class="grinder-row">
+          <div class="grinder-head">
+            <span class="k">Your grinder is set to</span>
+            <span class="grinder-val" id="g-val">—</span>
+          </div>
+          <input type="range" class="grinder-slider" id="g-slider" min="0" max="30" step="1" value="15" aria-label="Your grinder's current click setting">
+          <div class="grinder-feedback" id="g-feedback">Drag to your grinder's actual click setting — it's remembered next time.</div>
+        </div>
       </div>
 
       <div class="grid">
@@ -255,6 +308,12 @@
     <p>C2 clicks are counted from fully closed (zero point). Zero varies slightly between units — verify yours and shift all ranges accordingly. Fresh bags also drift: very fresh coffee (&lt; 7 days off roast) may need a touch coarser or longer bloom to degas.</p>
   </footer>
 
+</div>
+
+<div id="stopwatch">
+  <span id="sw-time">00:00</span>
+  <button class="sw-btn" id="sw-toggle" aria-label="Start or pause timer">▶</button>
+  <button class="sw-btn" id="sw-reset" aria-label="Reset timer">↺</button>
 </div>
 
 <script>
@@ -464,7 +523,18 @@ const ADJUST = {
 
 const RULER_MAX = 30;
 let brewer = null, roast = null, adj = null;
+let grinderVal = null;
+let lastLo = null, lastHi = null;
+const G_KEY = "dialin_grinder_setting";
 const $ = id => document.getElementById(id);
+
+(function(){
+  const stored = localStorage.getItem(G_KEY);
+  if(stored !== null && stored !== ""){
+    const n = Number(stored);
+    if(!Number.isNaN(n)) grinderVal = n;
+  }
+})();
 
 (function(){
   const r = $("ruler");
@@ -505,6 +575,12 @@ document.querySelectorAll(".adj-btn").forEach(b=>{
   });
 });
 
+$("g-slider").addEventListener("input", (e)=>{
+  grinderVal = Number(e.target.value);
+  localStorage.setItem(G_KEY, String(grinderVal));
+  updateGrinderUI(lastLo, lastHi);
+});
+
 function activeDelta(){
   if(!adj) return null;
   const a = ADJUST[adj];
@@ -515,6 +591,41 @@ function activeDelta(){
 function setBand(el, lo, hi){
   el.style.left = (lo/RULER_MAX*100)+"%";
   el.style.width = ((hi-lo)/RULER_MAX*100)+"%";
+}
+
+function updateGrinderUI(lo, hi){
+  const slider = $("g-slider");
+  const mark = $("user-mark");
+  const fb = $("g-feedback");
+
+  if(grinderVal === null){
+    if(lo != null && hi != null) slider.value = Math.round((lo+hi)/2);
+    $("g-val").textContent = "—";
+    mark.style.display = "none";
+    fb.textContent = "Drag to your grinder's actual click setting — it's remembered next time.";
+    fb.className = "grinder-feedback";
+    return;
+  }
+
+  slider.value = grinderVal;
+  $("g-val").textContent = grinderVal;
+  mark.style.display = "block";
+  mark.style.left = (grinderVal/RULER_MAX*100)+"%";
+
+  if(lo == null || hi == null) return;
+
+  if(grinderVal < lo){
+    const diff = lo - grinderVal;
+    fb.textContent = diff + (diff===1 ? " click" : " clicks") + " finer than target — coarsen up to reach the range.";
+    fb.className = "grinder-feedback off";
+  } else if(grinderVal > hi){
+    const diff = grinderVal - hi;
+    fb.textContent = diff + (diff===1 ? " click" : " clicks") + " coarser than target — grind finer to reach the range.";
+    fb.className = "grinder-feedback off";
+  } else {
+    fb.textContent = "Within target range.";
+    fb.className = "grinder-feedback in";
+  }
 }
 
 function render(){
@@ -554,6 +665,9 @@ function render(){
   setBand($("band"), lo, hi);
   setBand($("band-line"), lo, hi);
   $("r-grind-note").textContent = d.grindNote;
+
+  lastLo = lo; lastHi = hi;
+  updateGrinderUI(lo, hi);
 
   // ---- Temp ----
   $("r-temp").textContent = r.temp;
@@ -615,6 +729,40 @@ function render(){
     bn.style.display = "none";
   }
 }
+
+// ---- Stopwatch ----
+let swMs = 0, swRunning = false, swRAF = null, swLast = 0;
+
+function swFormat(ms){
+  const total = Math.floor(ms/1000);
+  const m = Math.floor(total/60), s = total%60;
+  return String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0");
+}
+function swTick(ts){
+  if(!swRunning) return;
+  if(swLast) swMs += ts - swLast;
+  swLast = ts;
+  $("sw-time").textContent = swFormat(swMs);
+  swRAF = requestAnimationFrame(swTick);
+}
+$("sw-toggle").addEventListener("click", ()=>{
+  swRunning = !swRunning;
+  $("sw-toggle").textContent = swRunning ? "❚❚" : "▶";
+  if(swRunning){
+    swLast = 0;
+    swRAF = requestAnimationFrame(swTick);
+  } else if(swRAF){
+    cancelAnimationFrame(swRAF);
+  }
+});
+$("sw-reset").addEventListener("click", ()=>{
+  swRunning = false;
+  swMs = 0;
+  swLast = 0;
+  if(swRAF) cancelAnimationFrame(swRAF);
+  $("sw-toggle").textContent = "▶";
+  $("sw-time").textContent = "00:00";
+});
 </script>
 </body>
 </html>

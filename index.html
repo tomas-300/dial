@@ -145,6 +145,8 @@
 
   /* ─────────────  Sticky grind slider  ───────────── */
   .haptic-hack{position:fixed;top:0;left:0;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;z-index:-1}
+  /* genuinely rendered, just too small and too pale to notice */
+  .haptic-vis{position:fixed;bottom:0;left:0;width:2px;height:2px;overflow:hidden;opacity:.02;pointer-events:none;z-index:0}
 
   .grindbar{
     position:sticky;top:0;z-index:60;
@@ -253,7 +255,42 @@
   }
   .tp-display.over{color:var(--accent)}
   .tp-phase{text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);min-height:14px;margin-bottom:12px}
-  .tp-presets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+  .tp-presets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+  .tp-presets[hidden],.tp-sliderwrap[hidden]{display:none}
+
+  .tp-sliderwrap{margin-bottom:12px}
+  .tp-slabel{display:flex;justify-content:space-between;align-items:baseline;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft)}
+  .tp-slabel b{font-size:.92rem;font-weight:600;letter-spacing:0;color:var(--ink);font-variant-numeric:tabular-nums}
+  .tp-slider{
+    --pad:9px;
+    position:relative;height:32px;margin-top:4px;
+    touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;cursor:grab;
+  }
+  .tp-slider:active{cursor:grabbing}
+  .tp-slider:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:8px}
+  .tp-strack{position:absolute;left:var(--pad);right:var(--pad);top:15px;height:2px;background:var(--line);border-radius:2px}
+  .tp-sfill{position:absolute;left:var(--pad);top:15px;height:2px;background:var(--accent);border-radius:2px;transition:width .2s}
+  .tp-stick{position:absolute;top:11px;width:1.5px;height:9px;background:var(--ink-soft);opacity:.4;transform:translateX(-50%)}
+  .tp-stick.major{top:9px;height:13px;opacity:.75;background:var(--ink)}
+  .tp-sthumb{
+    position:absolute;top:2px;height:28px;width:13px;margin-left:-6.5px;
+    background:var(--ink);border:2px solid var(--card);border-radius:7px;
+    box-shadow:0 2px 7px -2px rgba(22,64,63,.5);z-index:2;
+    transition:left .2s cubic-bezier(.22,1,.36,1),transform .15s;
+  }
+  .tp-slider.dragging .tp-sthumb{transition:transform .15s;transform:scale(1.14)}
+
+  /* haptics diagnostics — remove once a working mode is confirmed */
+  .hap-test{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line)}
+  .hap-test p{font-size:.78rem;margin-bottom:8px}
+  .hap-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .hap-btn{
+    font-family:'IBM Plex Mono',monospace;font-size:.8rem;font-weight:600;
+    width:38px;height:34px;border:1.5px solid var(--line);border-radius:6px;
+    background:var(--card);color:var(--ink);cursor:pointer;
+  }
+  .hap-btn.on{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+  .hap-env{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.08em;color:var(--ink-soft);margin-top:8px}
   .tp-preset{
     font-family:'IBM Plex Mono',monospace;font-size:.72rem;font-weight:500;
     padding:6px 10px;border:1.5px solid var(--line);border-radius:6px;
@@ -282,8 +319,10 @@
 </head>
 <body>
 
-<!-- Hidden iOS switch: toggling it makes Safari fire the system haptic engine -->
+<!-- iOS switch elements: toggling one makes Safari fire the system haptic engine.
+     Two copies — one invisible, one actually painted — because visibility may matter. -->
 <div class="haptic-hack" aria-hidden="true"><label id="haptic-label"><input type="checkbox" switch id="haptic-switch" tabindex="-1"></label></div>
+<div class="haptic-vis" aria-hidden="true"><label id="haptic-label-vis"><input type="checkbox" switch id="haptic-switch-vis" tabindex="-1"></label></div>
 
 <div class="grindbar" id="grindbar">
   <div class="gb-inner">
@@ -406,6 +445,18 @@
   <footer>
     <p><strong>Rule of the bench:</strong> the shifted values above are levers, not a checklist — change one per brew. Grind is the biggest lever; ratio controls strength; temp and time fine-tune extraction.</p>
     <p>C2 clicks are counted from fully closed (zero point). Zero varies slightly between units — verify yours and shift all ranges accordingly. Fresh bags also drift: very fresh coffee (&lt; 7 days off roast) may need a touch coarser or longer bloom to degas.</p>
+
+    <div class="hap-test">
+      <p><strong>Haptics test.</strong> Tap each button. Whichever one you actually feel becomes the app's haptic mode and is remembered — tap it once more to lock it in. If none of them buzz, try the same test in Safari rather than the Home Screen app.</p>
+      <div class="hap-row" id="hap-row">
+        <button class="hap-btn" type="button" data-h="label">A</button>
+        <button class="hap-btn" type="button" data-h="input">B</button>
+        <button class="hap-btn" type="button" data-h="vis">C</button>
+        <button class="hap-btn" type="button" data-h="vibrate">D</button>
+        <button class="hap-btn" type="button" data-h="off" style="width:auto;padding:0 10px">off</button>
+      </div>
+      <div class="hap-env" id="hap-env"></div>
+    </div>
   </footer>
 
 </div>
@@ -429,6 +480,15 @@
   <div class="tp-display" id="tp-display">0:00</div>
   <div class="tp-phase" id="tp-phase"></div>
   <div class="tp-presets" id="tp-presets"></div>
+  <div class="tp-sliderwrap" id="tp-sliderwrap">
+    <div class="tp-slabel"><span>Set duration</span><b id="tp-setval">4:00</b></div>
+    <div class="tp-slider" id="tp-slider" role="slider" tabindex="0"
+         aria-label="Countdown duration" aria-valuemin="5" aria-valuemax="600" aria-valuenow="240">
+      <div class="tp-strack"></div>
+      <div class="tp-sfill" id="tp-sfill"></div>
+      <div class="tp-sthumb" id="tp-sthumb"></div>
+    </div>
+  </div>
   <div class="tp-ctrl">
     <button class="tp-btn ghost" id="tp-reset" type="button">Reset</button>
     <button class="tp-btn" id="tp-start" type="button">Start</button>
@@ -797,6 +857,15 @@ function render(){
 
 <script>
 /* ══════════════════════════════════════════════════════════
+   PERSISTENCE
+   ══════════════════════════════════════════════════════════ */
+const Store = {
+  get(k, fb){ try{ const v = localStorage.getItem("dialin."+k); return v===null ? fb : v; }catch(e){ return fb; } },
+  set(k, v){ try{ localStorage.setItem("dialin."+k, v); }catch(e){} }
+};
+
+
+/* ══════════════════════════════════════════════════════════
    HAPTICS
    iOS Safari has no navigator.vibrate. It does, however, fire
    the Taptic Engine when a <input type="checkbox" switch> is
@@ -804,39 +873,76 @@ function render(){
    its label. Android/Chrome falls through to navigator.vibrate.
    ══════════════════════════════════════════════════════════ */
 const Haptic = (function(){
-  const label = document.getElementById("haptic-label");
-  let last = 0, enabled = true;
+  const label    = document.getElementById("haptic-label"),
+        input    = document.getElementById("haptic-switch"),
+        labelVis = document.getElementById("haptic-label-vis");
+  let last = 0;
 
-  /* The synthetic click we fire on the hidden switch must never escape into
-     the page — it would look like a real tap to any document-level handler. */
-  const host = label && label.parentNode;
-  if(host){
-    ["click","change","input","pointerdown","mousedown"].forEach(t =>
-      host.addEventListener(t, e => e.stopPropagation(), true)
-    );
-  }
+  /* The synthetic click we fire must never escape into the page — a
+     document-level handler would mistake it for a real tap. Bubble phase
+     only: a capture-phase stop would cut the event off before it reaches
+     the label, which can suppress the toggle that produces the haptic. */
+  [label, labelVis].forEach(l => {
+    const host = l && l.parentNode;
+    if(host) host.addEventListener("click", e => e.stopPropagation());
+  });
+
+  const MODES = {
+    label:   () => { label && label.click(); },
+    input:   () => { input && input.click(); },
+    vis:     () => { labelVis && labelVis.click(); },
+    vibrate: () => { navigator.vibrate && navigator.vibrate(20); },
+    off:     () => {}
+  };
+  let mode = Store.get("haptic", "label");
+  if(!MODES[mode]) mode = "label";
 
   function quiet(){
     try{ return window.matchMedia("(prefers-reduced-motion: reduce)").matches; }
     catch(e){ return false; }
   }
-  function thump(){ try{ label && label.click(); }catch(e){} }
-  function vib(p){ try{ navigator.vibrate && navigator.vibrate(p); }catch(e){} }
+  function thump(){ try{ MODES[mode](); }catch(e){} }
 
   function play(count, gap, pattern){
-    if(!enabled || quiet()) return;
+    if(mode === "off" || quiet()) return;
     thump();
     for(let i=1;i<count;i++) setTimeout(thump, gap*i);
-    vib(pattern);
+    /* vibrate is a no-op on iOS but the only thing that works on Android */
+    if(mode !== "vibrate"){ try{ navigator.vibrate && navigator.vibrate(pattern); }catch(e){} }
   }
   return {
-    /* rapid-fire, throttled — used while dragging the ruler */
-    tick(){ const t = performance.now(); if(t - last < 26) return; last = t; play(1,0,8); },
+    tick(){ const t = performance.now(); if(t - last < 26) return; last = t; play(1,0,10); },
     tap(){ play(1,0,14); },
     heavy(){ play(2,60,28); },
     done(){ play(3,95,[35,70,35,70,70]); },
-    set(v){ enabled = v; }
+    getMode(){ return mode; },
+    setMode(m){ if(MODES[m]){ mode = m; Store.set("haptic", m); } },
+    test(m){ const prev = mode; mode = m; thump(); mode = prev; }
   };
+})();
+
+/* Diagnostics: tap a letter to fire that implementation and adopt it. */
+(function(){
+  const row = document.getElementById("hap-row"), env = document.getElementById("hap-env");
+  if(!row) return;
+  function paint(){
+    [...row.children].forEach(b => b.classList.toggle("on", b.dataset.h === Haptic.getMode()));
+  }
+  row.addEventListener("click", e => {
+    const b = e.target.closest(".hap-btn");
+    if(!b) return;
+    Haptic.setMode(b.dataset.h);
+    Haptic.test(b.dataset.h);
+    paint();
+  });
+  paint();
+  const standalone = !!(window.navigator.standalone ||
+    (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches));
+  env.textContent =
+    "standalone: " + (standalone ? "yes" : "no") +
+    " · switch elem: " + ("switch" in document.createElement("input") ? "yes" : "no") +
+    " · vibrate api: " + ("vibrate" in navigator ? "yes" : "no") +
+    " · using: " + Haptic.getMode();
 })();
 
 /* Every tappable control in the app gets feedback on press. */
@@ -845,15 +951,6 @@ document.addEventListener("pointerdown", e => {
   if(!el || el.closest(".gb-scale")) return;
   Haptic.tap();
 }, {passive:true});
-
-
-/* ══════════════════════════════════════════════════════════
-   PERSISTENCE
-   ══════════════════════════════════════════════════════════ */
-const Store = {
-  get(k, fb){ try{ const v = localStorage.getItem("dialin."+k); return v===null ? fb : v; }catch(e){ return fb; } },
-  set(k, v){ try{ localStorage.setItem("dialin."+k, v); }catch(e){} }
-};
 
 
 /* ══════════════════════════════════════════════════════════
@@ -1085,20 +1182,6 @@ function syncTimer(){
     });
     presets.appendChild(b);
   });
-  ["−30s","+30s"].forEach(lbl => {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = "tp-preset";
-    b.textContent = lbl;
-    b.addEventListener("click", () => {
-      T.userSet = true;
-      T.target = Math.max(5, T.target + (lbl[0] === "+" ? 30 : -30));
-      T.label = "custom";
-      paintTimer();
-    });
-    presets.appendChild(b);
-  });
-
   if(!T.userSet && !T.running && spec.main){
     T.target = spec.main;
     T.label = "Brew " + fmt(spec.main);
@@ -1107,7 +1190,82 @@ function syncTimer(){
   paintTimer();
 }
 
+/* ── duration slider ── */
+const slider  = $("tp-slider"),
+      sThumb  = $("tp-sthumb"),
+      sFill   = $("tp-sfill"),
+      sVal    = $("tp-setval"),
+      sWrap   = $("tp-sliderwrap");
+const T_MIN = 5, T_MAX = 600, T_STEP = 5, S_PAD = 9;
+
+function sPos(v){
+  const f = (v - T_MIN) / (T_MAX - T_MIN);
+  return "calc(" + S_PAD + "px + (100% - " + (S_PAD*2) + "px) * " + f + ")";
+}
+(function(){
+  for(let s = 0; s <= T_MAX; s += 30){
+    if(s < T_MIN) continue;
+    const t = document.createElement("div");
+    t.className = "tp-stick" + (s % 60 === 0 ? " major" : "");
+    t.style.left = sPos(s);
+    slider.appendChild(t);
+  }
+})();
+
+function paintSlider(){
+  sThumb.style.left = sPos(T.target);
+  sFill.style.width = "calc((100% - " + (S_PAD*2) + "px) * " + ((T.target - T_MIN)/(T_MAX - T_MIN)) + ")";
+  sVal.textContent = fmt(T.target);
+  slider.setAttribute("aria-valuenow", T.target);
+  slider.setAttribute("aria-valuetext", fmt(T.target));
+}
+function setTarget(sec, haptic){
+  const snapped = Math.max(T_MIN, Math.min(T_MAX, Math.round(sec / T_STEP) * T_STEP));
+  const changed = snapped !== T.target;
+  T.target = snapped;
+  T.userSet = true;
+  T.label = "custom · " + fmt(snapped);
+  if(changed && haptic) Haptic.tick();
+  if(changed) [...presets.children].forEach(c => c.classList.remove("on"));
+  paintSlider();
+  paintTimer();
+}
+function secFromEvent(e){
+  const r = slider.getBoundingClientRect();
+  const usable = r.width - S_PAD*2;
+  const frac = usable > 0 ? (e.clientX - r.left - S_PAD) / usable : 0;
+  return T_MIN + frac * (T_MAX - T_MIN);
+}
+let sDragging = false;
+slider.addEventListener("pointerdown", e => {
+  sDragging = true;
+  slider.classList.add("dragging");
+  try{ slider.setPointerCapture(e.pointerId); }catch(err){}
+  Haptic.tap();
+  setTarget(secFromEvent(e), false);
+  e.preventDefault();
+});
+slider.addEventListener("pointermove", e => { if(sDragging) setTarget(secFromEvent(e), true); });
+["pointerup","pointercancel"].forEach(evt =>
+  slider.addEventListener(evt, e => {
+    if(!sDragging) return;
+    sDragging = false;
+    slider.classList.remove("dragging");
+    try{ slider.releasePointerCapture(e.pointerId); }catch(err){}
+    Haptic.tap();
+  })
+);
+slider.addEventListener("keydown", e => {
+  const step = e.shiftKey ? 60 : T_STEP;
+  if(e.key === "ArrowLeft" || e.key === "ArrowDown"){ setTarget(T.target - step, true); e.preventDefault(); }
+  else if(e.key === "ArrowRight" || e.key === "ArrowUp"){ setTarget(T.target + step, true); e.preventDefault(); }
+});
+
 function paintTimer(){
+  sWrap.hidden = T.mode !== "down";
+  presets.hidden = T.mode !== "down";
+  paintSlider();
+
   const e = elapsed();
   if(T.mode === "down"){
     const rem = T.target - e;
